@@ -41,8 +41,9 @@ func buscarMarketplace(id string) (marketplace, bool) {
 	return marketplace{}, false
 }
 
-// Los artículos de otros países no siempre traen el texto del estado, pero
-// sí su conditionId, que es común a todos los marketplaces.
+// eBay manda el texto del estado en el idioma del anuncio ("Gebraucht",
+// "Like New"), y a veces ni lo manda. El conditionId es común a todos los
+// marketplaces, así que se traduce desde aquí.
 var nombresEstado = map[string]string{
 	"1000": "Nuevo",
 	"1500": "Nuevo (otro)",
@@ -63,10 +64,10 @@ var nombresEstado = map[string]string{
 }
 
 func nombreEstado(texto, id string) string {
-	if texto != "" {
-		return texto
+	if nombre, ok := nombresEstado[id]; ok {
+		return nombre
 	}
-	return nombresEstado[id]
+	return texto
 }
 
 // Nombres de los países que más aparecen como origen de los artículos. Para

@@ -11,13 +11,15 @@
 </head>
 <body>
     <header class="cabecera">
-        <a class="marca" href="/">Simple<span>Ebay</span></a>
-        {{ if not .Inicio }}
-        <form class="buscador" action="/s" method="get" role="search">
-            <input type="search" name="q" value="{{ .Consulta }}" placeholder="Buscar en eBay" aria-label="Buscar en eBay" required>
-            <button type="submit">Buscar</button>
-        </form>
-        {{ end }}
+        <div class="cabecera-interior">
+            <a class="marca" href="/">Simple<span>Ebay</span></a>
+            {{ if not .Inicio }}
+            <form class="buscador" action="/s" method="get" role="search">
+                <input type="search" name="q" value="{{ .Consulta }}" placeholder="Buscar en eBay" aria-label="Buscar en eBay" required>
+                <button type="submit">Buscar</button>
+            </form>
+            {{ end }}
+        </div>
     </header>
 
     <main class="contenido">

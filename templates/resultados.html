@@ -43,7 +43,10 @@
     <p class="tenue detalle">{{ .Detalle }}</p>
 </section>
 {{ else }}{{ with .Resultados }}
-<p class="resumen tenue">{{ miles .Total }} resultados en eBay {{ $f.Marketplace.Nombre }}</p>
+<p class="resumen tenue">
+    {{ miles .Total }} resultados en eBay {{ $f.Marketplace.Nombre }}
+    {{ if .Descartados }}· {{ .Descartados }} ocultos en esta página porque eBay los devolvió fuera del rango de precio{{ end }}
+</p>
 
 {{ if .Tarjetas }}
 <ul class="rejilla">
@@ -64,8 +67,9 @@
         {{ if .Subasta }}
         <p class="subasta">
             <span class="etiqueta">Subasta</span>
-            {{ if eq .Pujas 1 }}1 puja{{ else }}{{ .Pujas }} pujas{{ end }} · {{ .Restante }}
-            <span class="tenue">· cierra el {{ .Cierre }}</span>
+            <span class="sin-corte">{{ if eq .Pujas 1 }}1 puja{{ else }}{{ .Pujas }} pujas{{ end }}</span>
+            · <span class="sin-corte">{{ .Restante }}</span>
+            <span class="tenue sin-corte">· cierra el {{ .Cierre }}</span>
         </p>
         {{ end }}
 

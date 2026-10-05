@@ -304,6 +304,42 @@ func enlaceFicha(legacyID, itemID string) string {
 	return enlace
 }
 
+// valorMostrado es el precio que ve el usuario en la tarjeta: la puja actual
+// en las subastas y el precio fijo en el resto, ya en la moneda del
+// marketplace.
+func valorMostrado(r resumenAPI) (float64, bool) {
+	importe := r.Precio
+	if contiene(r.Formatos, "AUCTION") && r.PujaActual != nil {
+		importe = r.PujaActual
+	}
+	if importe == nil {
+		return 0, false
+	}
+	n, err := strconv.ParseFloat(importe.Valor, 64)
+	return n, err == nil
+}
+
+// fueraDeRango repite el filtro de precio sobre lo que se va a mostrar. eBay
+// no lo aplica bien a las subastas en otra moneda: en EBAY_ES, con un rango
+// de 1 a 10 €, cuelan pujas de 0,99 US$ que convertidas dan 0,88 €. Con
+// subastas en la moneda del marketplace o con precio fijo sí lo respeta.
+func (f filtrosBusqueda) fueraDeRango(r resumenAPI) bool {
+	if f.Min == "" && f.Max == "" {
+		return false
+	}
+	precio, ok := valorMostrado(r)
+	if !ok {
+		return false
+	}
+	if minimo, err := strconv.ParseFloat(f.Min, 64); err == nil && precio < minimo {
+		return true
+	}
+	if maximo, err := strconv.ParseFloat(f.Max, 64); err == nil && precio > maximo {
+		return true
+	}
+	return false
+}
+
 func nuevaTarjeta(r resumenAPI) tarjeta {
 	t := tarjeta{
 		Enlace:  enlaceFicha(r.LegacyID, r.ItemID),
@@ -362,11 +398,14 @@ type enlacePagina struct {
 }
 
 type resultadoBusqueda struct {
-	Total     int
-	Tarjetas  []tarjeta
-	Paginas   []enlacePagina
-	Anterior  string
-	Siguiente string
+	Total int
+	// Descartados cuenta los artículos de esta página que eBay devolvió
+	// fuera del rango de precio pedido.
+	Descartados int
+	Tarjetas    []tarjeta
+	Paginas     []enlacePagina
+	Anterior    string
+	Siguiente   string
 }
 
 // paginacion devuelve la primera y la última página, y las dos vecinas de la
@@ -414,6 +453,10 @@ func buscar(ctx context.Context, ebay *clienteEbay, f filtrosBusqueda) (*resulta
 
 	res := &resultadoBusqueda{Total: resp.Total}
 	for _, r := range resp.Resumenes {
+		if f.fueraDeRango(r) {
+			res.Descartados++
+			continue
+		}
 		res.Tarjetas = append(res.Tarjetas, nuevaTarjeta(r))
 	}
 	res.Paginas, res.Anterior, res.Siguiente = paginacion(f, resp.Total)
