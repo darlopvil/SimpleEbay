@@ -1,0 +1,9 @@
+# Binarios
+/simpleebay
+*.exe
+*.test
+*.out
+
+# Despliegue local (contiene datos de infraestructura y secretos)
+docker-compose.yml
+.env

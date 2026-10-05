@@ -1,0 +1,174 @@
+/* SimpleEbay — hoja de estilos única, sin dependencias externas. */
+
+:root {
+    --fondo: #f6f3ee;
+    --superficie: #fffdf9;
+    --texto: #1f1d1a;
+    --tenue: #6d675e;
+    --borde: #e2dcd2;
+    --acento: #2f6b4f;
+    --acento-texto: #f6f3ee;
+    --precio: #1f1d1a;
+    --aviso: #a3412b;
+    --radio: 10px;
+    --sombra: 0 1px 2px rgb(0 0 0 / 6%);
+    color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --fondo: #151715;
+        --superficie: #1d201e;
+        --texto: #e9e5dd;
+        --tenue: #9b968c;
+        --borde: #2f3430;
+        --acento: #7fc4a0;
+        --acento-texto: #10140f;
+        --precio: #f3efe6;
+        --aviso: #f08c73;
+        --sombra: none;
+    }
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+a {
+    color: var(--acento);
+}
+
+a:hover {
+    text-decoration-thickness: 2px;
+}
+
+.tenue {
+    color: var(--tenue);
+}
+
+/* Cabecera */
+
+.cabecera {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding: 0.75rem clamp(1rem, 4vw, 2.5rem);
+    background: var(--superficie);
+    border-bottom: 1px solid var(--borde);
+}
+
+.marca {
+    font-weight: 800;
+    font-size: 1.35rem;
+    letter-spacing: -0.02em;
+    color: var(--texto);
+    text-decoration: none;
+}
+
+.marca span {
+    color: var(--acento);
+}
+
+/* Buscador */
+
+.buscador {
+    display: flex;
+    flex: 1;
+    max-width: 640px;
+}
+
+.buscador input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    padding: 0.55rem 0.9rem;
+    color: var(--texto);
+    background: var(--fondo);
+    border: 1px solid var(--borde);
+    border-right: none;
+    border-radius: var(--radio) 0 0 var(--radio);
+}
+
+.buscador input:focus {
+    outline: 2px solid var(--acento);
+    outline-offset: -1px;
+}
+
+.buscador button {
+    font: inherit;
+    font-weight: 600;
+    padding: 0.55rem 1.2rem;
+    color: var(--acento-texto);
+    background: var(--acento);
+    border: 1px solid var(--acento);
+    border-radius: 0 var(--radio) var(--radio) 0;
+    cursor: pointer;
+}
+
+.buscador-grande {
+    margin: 2rem auto 0;
+    font-size: 1.15rem;
+}
+
+/* Contenido */
+
+.contenido {
+    flex: 1;
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 1.5rem clamp(1rem, 4vw, 2.5rem);
+}
+
+.portada {
+    text-align: center;
+    padding: clamp(2rem, 12vh, 7rem) 0;
+}
+
+.portada h1 {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    letter-spacing: -0.03em;
+    margin: 0 0 0.5rem;
+}
+
+.aviso {
+    max-width: 560px;
+    margin: 3rem auto;
+    padding: 1.5rem 2rem;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-left: 4px solid var(--aviso);
+    border-radius: var(--radio);
+}
+
+.aviso h1 {
+    font-size: 1.3rem;
+    margin-top: 0;
+}
+
+/* Pie */
+
+.pie {
+    padding: 1.25rem clamp(1rem, 4vw, 2.5rem);
+    border-top: 1px solid var(--borde);
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.pie p {
+    margin: 0.2rem 0;
+}

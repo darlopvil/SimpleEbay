@@ -1,0 +1,22 @@
+# Ejemplo de despliegue. Copiar a docker-compose.yml y adaptar.
+#
+# El servicio no publica puertos: se asume un proxy inverso que lo alcanza
+# por nombre de contenedor. La red del proxy no puede ser "internal", porque
+# el contenedor necesita salir a api.ebay.com.
+
+services:
+  simpleebay_app:
+    build: .
+    image: simpleebay:local
+    container_name: simpleebay_app
+    restart: unless-stopped
+    env_file: .env
+    mem_limit: 64m
+    # ports:
+    #   - "127.0.0.1:8080:8080"
+    networks:
+      - red_del_proxy_inverso
+
+networks:
+  red_del_proxy_inverso:
+    external: true

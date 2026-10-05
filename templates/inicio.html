@@ -1,0 +1,10 @@
+{{ define "contenido" }}
+<section class="portada">
+    <h1>Busca en eBay sin que eBay te vea</h1>
+    <p class="tenue">Sin rastreadores, sin JavaScript y sin que tu navegador llegue a hablar con eBay.</p>
+    <form class="buscador buscador-grande" action="/s" method="get" role="search">
+        <input type="search" name="q" placeholder="¿Qué buscas?" aria-label="Buscar en eBay" required autofocus>
+        <button type="submit">Buscar</button>
+    </form>
+</section>
+{{ end }}
