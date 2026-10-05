@@ -28,12 +28,13 @@ type datosPagina struct {
 }
 
 var funcionesPlantilla = template.FuncMap{
-	"marketplaces":   func() []marketplace { return marketplaces },
-	"opcionesOrden":  func() []opcion { return opcionesOrden },
-	"opcionesEstado": func() []opcion { return opcionesEstado },
-	"opcionesCompra": func() []opcion { return opcionesCompra },
-	"miles":          formatoEntero,
-	"add":            func(a, b int) int { return a + b },
+	"marketplaces":      func() []marketplace { return marketplaces },
+	"opcionesOrden":     func() []opcion { return opcionesOrden },
+	"opcionesEstado":    func() []opcion { return opcionesEstado },
+	"opcionesCompra":    func() []opcion { return opcionesCompra },
+	"opcionesUbicacion": func() []opcion { return opcionesUbicacion },
+	"miles":             formatoEntero,
+	"add":               func(a, b int) int { return a + b },
 }
 
 // Cada página se parsea en su propio conjunto junto a la base, porque todas

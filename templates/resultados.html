@@ -3,9 +3,9 @@
 <form class="filtros" action="/s" method="get">
     <input type="hidden" name="q" value="{{ $f.Consulta }}">
     <label>
-        <span>Sitio</span>
+        <span>eBay de</span>
         <select name="mp">
-            {{ range marketplaces }}<option value="{{ .ID }}"{{ if eq .ID $f.Marketplace.ID }} selected{{ end }}>eBay {{ .Nombre }}</option>{{ end }}
+            {{ range marketplaces }}<option value="{{ .ID }}"{{ if eq .ID $f.Marketplace.ID }} selected{{ end }}>{{ .Nombre }}</option>{{ end }}
         </select>
     </label>
     <label>
@@ -26,8 +26,14 @@
             {{ range opcionesCompra }}<option value="{{ .Valor }}"{{ if eq .Valor $f.Compra }} selected{{ end }}>{{ .Etiqueta }}</option>{{ end }}
         </select>
     </label>
+    <label>
+        <span>Ubicación</span>
+        <select name="desde">
+            {{ range opcionesUbicacion }}<option value="{{ .Valor }}"{{ if eq .Valor $f.Desde }} selected{{ end }}>{{ .Etiqueta }}</option>{{ end }}
+        </select>
+    </label>
     <label class="filtro-precio">
-        <span>Precio ({{ $f.Marketplace.Moneda }})</span>
+        <span>Precio con envío (€)</span>
         <span class="rango">
             <input type="text" name="min" value="{{ $f.Min }}" inputmode="decimal" placeholder="mín." aria-label="Precio mínimo">
             <input type="text" name="max" value="{{ $f.Max }}" inputmode="decimal" placeholder="máx." aria-label="Precio máximo">
@@ -45,7 +51,7 @@
 {{ else }}{{ with .Resultados }}
 <p class="resumen tenue">
     {{ miles .Total }} resultados en eBay {{ $f.Marketplace.Nombre }}
-    {{ if .Descartados }}· {{ .Descartados }} ocultos porque eBay los devolvió fuera del rango de precio{{ end }}
+    {{ if .Descartados }}· {{ .Descartados }} ocultos por salirse del rango de precio con el envío incluido{{ end }}
 </p>
 
 {{ if .Tarjetas }}
@@ -62,7 +68,7 @@
             {{ if .Tachado }}<s class="tachado">{{ .Tachado }}</s>{{ end }}
             {{ if .Descuento }}<span class="etiqueta etiqueta-acento">{{ .Descuento }}</span>{{ end }}
         </div>
-        {{ if .PrecioOrigen }}<p class="origen tenue">{{ .PrecioOrigen }} del vendedor</p>{{ end }}
+        {{ if .PrecioOrigen }}<p class="origen tenue">{{ .PrecioOrigen }}</p>{{ end }}
 
         {{ if .Subasta }}
         <p class="subasta">

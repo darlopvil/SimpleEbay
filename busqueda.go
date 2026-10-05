@@ -39,22 +39,48 @@ type opcion struct {
 }
 
 var (
+	// eBay ordena por precio con el envío incluido, igual que se aplica el
+	// rango de precio.
 	opcionesOrden = []opcion{
-		{"", "Mejor coincidencia"},
-		{"price", "Precio + envío: más bajo"},
-		{"-price", "Precio + envío: más alto"},
-		{"newlyListed", "Recién publicados"},
+		{"", "Relevancia"},
+		{"price", "Más barato"},
+		{"-price", "Más caro"},
+		{"newlyListed", "Más recientes"},
 		{"endingSoonest", "Terminan antes"},
 	}
 	opcionesEstado = []opcion{
-		{"", "Cualquier estado"},
+		{"", "Cualquiera"},
 		{"NEW", "Nuevo"},
 		{"USED", "Usado"},
 	}
 	opcionesCompra = []opcion{
-		{"", "Todos los formatos"},
+		{"", "Todos"},
 		{"FIXED_PRICE", "¡Cómpralo ya!"},
 		{"AUCTION", "Subastas"},
+	}
+	// "UE" es la región de la Unión Europea; el resto son países. eBay
+	// filtra por la ubicación del artículo, que suele ser la del vendedor.
+	opcionesUbicacion = []opcion{
+		{"", "Cualquiera"},
+		{"UE", "Unión Europea"},
+		{"ES", "España"},
+		{"PT", "Portugal"},
+		{"FR", "Francia"},
+		{"IT", "Italia"},
+		{"DE", "Alemania"},
+		{"NL", "Países Bajos"},
+		{"BE", "Bélgica"},
+		{"AT", "Austria"},
+		{"IE", "Irlanda"},
+		{"PL", "Polonia"},
+		{"GB", "Reino Unido"},
+		{"CH", "Suiza"},
+		{"US", "Estados Unidos"},
+		{"CA", "Canadá"},
+		{"JP", "Japón"},
+		{"CN", "China"},
+		{"HK", "Hong Kong"},
+		{"AU", "Australia"},
 	}
 )
 
@@ -75,9 +101,11 @@ type filtrosBusqueda struct {
 	Orden       string
 	Estado      string
 	Compra      string
-	Min         string
-	Max         string
-	Pagina      int
+	Desde       string
+	// Rango de precio en euros, envío incluido.
+	Min    string
+	Max    string
+	Pagina int
 }
 
 // normalizarPrecio acepta "12,5" o "12.5" y devuelve "12.5". Cualquier cosa
@@ -144,6 +172,9 @@ func leerFiltros(w http.ResponseWriter, r *http.Request) filtrosBusqueda {
 	if v := q.Get("compra"); opcionValida(opcionesCompra, v) {
 		f.Compra = v
 	}
+	if v := q.Get("desde"); opcionValida(opcionesUbicacion, v) {
+		f.Desde = v
+	}
 	if n, err := strconv.Atoi(q.Get("pagina")); err == nil && n > 1 {
 		f.Pagina = min(n, maxPaginas)
 	}
@@ -158,7 +189,7 @@ func (f filtrosBusqueda) enlace(pagina int) string {
 	v.Set("mp", f.Marketplace.ID)
 	for clave, valor := range map[string]string{
 		"orden": f.Orden, "estado": f.Estado, "compra": f.Compra,
-		"min": f.Min, "max": f.Max,
+		"desde": f.Desde, "min": f.Min, "max": f.Max,
 	} {
 		if valor != "" {
 			v.Set(clave, valor)
@@ -195,14 +226,27 @@ func (f filtrosBusqueda) consultaAPI() url.Values {
 	if f.Compra != "" {
 		filtro = append(filtro, "buyingOptions:{"+f.Compra+"}")
 	}
-	// La API exige priceCurrency junto a price. Solo con el máximo hacen
-	// falta los dos puntos delante; solo con el mínimo, ninguno.
+	switch f.Desde {
+	case "":
+	case "UE":
+		filtro = append(filtro, "itemLocationRegion:EUROPEAN_UNION")
+	default:
+		filtro = append(filtro, "itemLocationCountry:"+f.Desde)
+	}
+	// El filtro de eBay se aplica al precio sin envío, y el rango del usuario
+	// es con envío incluido: sirve de primera criba, y fueraDeRango termina
+	// el trabajo. Con el máximo no se pierde nada, porque el precio nunca
+	// supera al total. Con el mínimo se pierde algún artículo barato con un
+	// envío caro que lo haría entrar; es un caso raro y a cambio la criba
+	// sigue siendo útil. eBay acepta el rango en euros en cualquier
+	// marketplace y lo convierte él. Solo con el máximo hacen falta los dos
+	// puntos delante; solo con el mínimo, ninguno.
 	if f.Min != "" || f.Max != "" {
 		rango := f.Min
 		if f.Max != "" {
 			rango += ".." + f.Max
 		}
-		filtro = append(filtro, "price:["+rango+"]", "priceCurrency:"+f.Marketplace.Moneda)
+		filtro = append(filtro, "price:["+rango+"]", "priceCurrency:"+monedaMostrada)
 	}
 	if len(filtro) > 0 {
 		v.Set("filter", strings.Join(filtro, ","))
@@ -211,30 +255,6 @@ func (f filtrosBusqueda) consultaAPI() url.Values {
 }
 
 // Estructuras de la respuesta de la API, solo con los campos que se usan.
-
-type importeAPI struct {
-	Valor        string `json:"value"`
-	Moneda       string `json:"currency"`
-	ValorOrigen  string `json:"convertedFromValue"`
-	MonedaOrigen string `json:"convertedFromCurrency"`
-}
-
-// texto da el importe en la moneda del marketplace.
-func (i *importeAPI) texto() string {
-	if i == nil {
-		return ""
-	}
-	return formatoDinero(i.Valor, i.Moneda)
-}
-
-// textoOrigen da el importe original cuando eBay lo ha convertido desde la
-// moneda del vendedor.
-func (i *importeAPI) textoOrigen() string {
-	if i == nil || i.ValorOrigen == "" {
-		return ""
-	}
-	return formatoDinero(i.ValorOrigen, i.MonedaOrigen)
-}
 
 type imagenAPI struct {
 	URL string `json:"imageUrl"`
@@ -320,30 +340,34 @@ func enlaceFicha(legacyID, itemID string) string {
 	return enlace
 }
 
-// valorMostrado es el precio que ve el usuario en la tarjeta: la puja actual
-// en las subastas y el precio fijo en el resto, ya en la moneda del
-// marketplace.
-func valorMostrado(r resumenAPI) (float64, bool) {
+// totalEuros es lo que el usuario pagaría en euros: el precio que ve en la
+// tarjeta (la puja actual en las subastas) más el primer envío, si se sabe.
+func totalEuros(r resumenAPI) (float64, bool) {
 	importe := r.Precio
 	if contiene(r.Formatos, "AUCTION") && r.PujaActual != nil {
 		importe = r.PujaActual
 	}
-	if importe == nil {
+	total, _, ok := importe.euros()
+	if !ok {
 		return 0, false
 	}
-	n, err := strconv.ParseFloat(importe.Valor, 64)
-	return n, err == nil
+	if len(r.Envios) > 0 {
+		if envio, _, ok := r.Envios[0].Coste.euros(); ok {
+			total += envio
+		}
+	}
+	return total, true
 }
 
-// fueraDeRango repite el filtro de precio sobre lo que se va a mostrar. eBay
-// no lo aplica bien a las subastas en otra moneda: en EBAY_ES, con un rango
-// de 1 a 10 €, cuelan pujas de 0,99 US$ que convertidas dan 0,88 €. Con
-// subastas en la moneda del marketplace o con precio fijo sí lo respeta.
+// fueraDeRango aplica el filtro de precio al total con envío, que eBay no
+// sabe hacer. Además corrige un fallo suyo: con subastas en otra moneda deja
+// pasar pujas por debajo del mínimo (en EBAY_ES, con un rango de 1 a 10 €,
+// cuelan pujas de 0,99 US$, que son 0,88 €).
 func (f filtrosBusqueda) fueraDeRango(r resumenAPI) bool {
 	if f.Min == "" && f.Max == "" {
 		return false
 	}
-	precio, ok := valorMostrado(r)
+	precio, ok := totalEuros(r)
 	if !ok {
 		return false
 	}
@@ -415,8 +439,8 @@ type enlacePagina struct {
 
 type resultadoBusqueda struct {
 	Total int
-	// Descartados cuenta los artículos del bloque actual que eBay devolvió
-	// fuera del rango de precio pedido.
+	// Descartados cuenta los artículos del bloque actual que, con el envío
+	// incluido, quedan fuera del rango de precio pedido.
 	Descartados int
 	Tarjetas    []tarjeta
 	Paginas     []enlacePagina

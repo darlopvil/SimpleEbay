@@ -1,8 +1,7 @@
 package main
 
 // marketplace describe un sitio de eBay en el que la Browse API admite
-// búsquedas. La moneda hace falta para el filtro de precio, que eBay solo
-// acepta acompañado de priceCurrency.
+// búsquedas, con la moneda en la que eBay da sus precios.
 type marketplace struct {
 	ID     string
 	Nombre string

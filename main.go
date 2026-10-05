@@ -106,6 +106,9 @@ func main() {
 		os.Exit(probar(ebay, *marketplace, *sonda))
 	}
 
+	// Los tipos de cambio se descargan y renuevan en segundo plano.
+	go mantenerTiposCambio()
+
 	// Se pide el token al arrancar para que un keyset mal copiado o sin
 	// activar salga en los logs desde el primer momento, y no con la primera
 	// búsqueda. Un fallo aquí no detiene el servicio: puede ser un corte de
