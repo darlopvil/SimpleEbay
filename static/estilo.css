@@ -172,3 +172,240 @@ a:hover {
 .pie p {
     margin: 0.2rem 0;
 }
+
+/* Filtros de búsqueda */
+
+.filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem 1rem;
+    padding: 0.9rem 1rem;
+    margin-bottom: 1rem;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.filtros label {
+    flex: 1 1 140px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.8rem;
+    color: var(--tenue);
+}
+
+.filtros select,
+.filtros input {
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--texto);
+    background: var(--fondo);
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    padding: 0.35rem 0.5rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.filtros .filtro-precio {
+    flex-basis: 190px;
+}
+
+.filtros .rango {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.filtros .rango input {
+    width: 50%;
+    min-width: 0;
+}
+
+.filtros button {
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.4rem 1rem;
+    color: var(--acento-texto);
+    background: var(--acento);
+    border: 1px solid var(--acento);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.resumen {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+}
+
+/* Rejilla de resultados */
+
+.rejilla {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    /* Dos columnas como mínimo incluso en un móvil estrecho. */
+    grid-template-columns: repeat(auto-fill, minmax(min(210px, calc(50% - 0.5rem)), 1fr));
+    gap: 1rem;
+}
+
+.tarjeta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.75rem;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    box-shadow: var(--sombra);
+}
+
+.tarjeta-enlace {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    color: var(--texto);
+    text-decoration: none;
+}
+
+.tarjeta-enlace:hover .tarjeta-titulo {
+    color: var(--acento);
+    text-decoration: underline;
+}
+
+/* Las fotos de eBay tienen proporciones muy distintas: se encajan sin
+   recortar sobre un fondo blanco, que es el que suelen traer. */
+.tarjeta-foto {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    background: #fff;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.sin-foto {
+    color: #8a847a;
+    font-size: 0.8rem;
+}
+
+.tarjeta-foto img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.tarjeta-titulo {
+    font-size: 0.92rem;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.tarjeta-precio {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem;
+}
+
+.precio {
+    font-size: 1.25rem;
+    font-weight: 750;
+    color: var(--precio);
+    letter-spacing: -0.01em;
+}
+
+.tachado {
+    color: var(--tenue);
+    font-size: 0.85rem;
+}
+
+.origen {
+    margin: -0.2rem 0 0;
+    font-size: 0.8rem;
+}
+
+.etiqueta {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid var(--borde);
+    color: var(--texto);
+}
+
+.etiqueta-acento {
+    color: var(--acento-texto);
+    background: var(--acento);
+    border-color: var(--acento);
+}
+
+.subasta {
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.tarjeta-datos {
+    list-style: none;
+    margin: auto 0 0;
+    padding: 0.4rem 0 0;
+    border-top: 1px dashed var(--borde);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.tarjeta-datos .gratis {
+    color: var(--acento);
+    font-weight: 600;
+}
+
+/* Paginación */
+
+.paginacion {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 2rem 0 0.5rem;
+}
+
+.paginacion a,
+.paginacion .actual {
+    min-width: 2.3rem;
+    padding: 0.35rem 0.7rem;
+    text-align: center;
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    text-decoration: none;
+    background: var(--superficie);
+}
+
+.paginacion .actual {
+    font-weight: 700;
+    color: var(--acento-texto);
+    background: var(--acento);
+    border-color: var(--acento);
+}
+
+.paginacion .hueco {
+    color: var(--tenue);
+}
+
+.aviso-neutro {
+    border-left-color: var(--borde);
+}
+
+.detalle {
+    font-size: 0.8rem;
+    word-break: break-word;
+}

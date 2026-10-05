@@ -8,7 +8,7 @@ Unlike scraping frontends, SimpleEbay uses eBay's official
 it does not break when the site's HTML changes and it is not affected by
 anti-bot blocking.
 
-> **Status:** early development. Only the skeleton is in place.
+> **Status:** early development. Search works; item pages are next.
 
 ## Requirements
 
@@ -46,6 +46,7 @@ static files are embedded.
 | | `EBAY_CLIENT_SECRET` | | Cert ID (Client Secret) of your keyset |
 | | `SIMPLEEBAY_ENVIO_PAIS` | | Destination country for shipping estimates |
 | | `SIMPLEEBAY_ENVIO_CP` | | Destination postal code for shipping estimates |
+| | `TZ` | `UTC` | Time zone for auction end times, e.g. `Europe/Madrid` |
 | `-h` | `SIMPLEEBAY_HOST` | `0.0.0.0` | Listen address |
 | `-p` | `SIMPLEEBAY_PORT` | `8080` | Listen port |
 | `-probe` | | | Print the raw JSON of an API path and exit |

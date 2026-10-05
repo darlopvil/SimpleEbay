@@ -14,6 +14,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	// Base de zonas horarias embebida: la imagen es scratch y no trae
+	// /usr/share/zoneinfo, pero así la variable TZ funciona igual.
+	_ "time/tzdata"
 )
 
 var (
@@ -143,6 +147,8 @@ func main() {
 		fmt.Fprint(w, "User-agent: *\nDisallow: /\n")
 	})
 
+	mux.HandleFunc("/s", manejadorBusqueda(ebay))
+	mux.HandleFunc("/img/", proxyImagen)
 	mux.Handle("/static/", http.FileServer(http.FS(estaticosFS)))
 
 	srv := &http.Server{

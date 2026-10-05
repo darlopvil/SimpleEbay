@@ -16,9 +16,23 @@ type datosPagina struct {
 	// Inicio oculta el buscador de la cabecera en la portada, que ya tiene
 	// el suyo en grande.
 	Inicio bool
+
+	// Error y Detalle describen un fallo de la API: el primero para leerlo,
+	// el segundo con el mensaje técnico de eBay.
+	Error   string
+	Detalle string
+
+	Filtros    *filtrosBusqueda
+	Resultados *resultadoBusqueda
 }
 
-var funcionesPlantilla = template.FuncMap{}
+var funcionesPlantilla = template.FuncMap{
+	"marketplaces":   func() []marketplace { return marketplaces },
+	"opcionesOrden":  func() []opcion { return opcionesOrden },
+	"opcionesEstado": func() []opcion { return opcionesEstado },
+	"opcionesCompra": func() []opcion { return opcionesCompra },
+	"miles":          formatoEntero,
+}
 
 // Cada página se parsea en su propio conjunto junto a la base, porque todas
 // definen el mismo bloque "contenido".
@@ -31,8 +45,9 @@ func cargarPlantilla(pagina string) *template.Template {
 }
 
 var plantillas = map[string]*template.Template{
-	"inicio": cargarPlantilla("inicio"),
-	"error":  cargarPlantilla("error"),
+	"inicio":     cargarPlantilla("inicio"),
+	"error":      cargarPlantilla("error"),
+	"resultados": cargarPlantilla("resultados"),
 }
 
 // renderizar ejecuta la plantilla en un búfer antes de escribir nada. Así un

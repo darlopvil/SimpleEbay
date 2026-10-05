@@ -1,0 +1,102 @@
+{{ define "contenido" }}
+{{ $f := .Filtros }}
+<form class="filtros" action="/s" method="get">
+    <input type="hidden" name="q" value="{{ $f.Consulta }}">
+    <label>
+        <span>Sitio</span>
+        <select name="mp">
+            {{ range marketplaces }}<option value="{{ .ID }}"{{ if eq .ID $f.Marketplace.ID }} selected{{ end }}>eBay {{ .Nombre }}</option>{{ end }}
+        </select>
+    </label>
+    <label>
+        <span>Orden</span>
+        <select name="orden">
+            {{ range opcionesOrden }}<option value="{{ .Valor }}"{{ if eq .Valor $f.Orden }} selected{{ end }}>{{ .Etiqueta }}</option>{{ end }}
+        </select>
+    </label>
+    <label>
+        <span>Estado</span>
+        <select name="estado">
+            {{ range opcionesEstado }}<option value="{{ .Valor }}"{{ if eq .Valor $f.Estado }} selected{{ end }}>{{ .Etiqueta }}</option>{{ end }}
+        </select>
+    </label>
+    <label>
+        <span>Formato</span>
+        <select name="compra">
+            {{ range opcionesCompra }}<option value="{{ .Valor }}"{{ if eq .Valor $f.Compra }} selected{{ end }}>{{ .Etiqueta }}</option>{{ end }}
+        </select>
+    </label>
+    <label class="filtro-precio">
+        <span>Precio ({{ $f.Marketplace.Moneda }})</span>
+        <span class="rango">
+            <input type="text" name="min" value="{{ $f.Min }}" inputmode="decimal" placeholder="mín." aria-label="Precio mínimo">
+            <input type="text" name="max" value="{{ $f.Max }}" inputmode="decimal" placeholder="máx." aria-label="Precio máximo">
+        </span>
+    </label>
+    <button type="submit">Aplicar</button>
+</form>
+
+{{ if .Error }}
+<section class="aviso">
+    <h1>Algo ha fallado</h1>
+    <p>{{ .Error }}</p>
+    <p class="tenue detalle">{{ .Detalle }}</p>
+</section>
+{{ else }}{{ with .Resultados }}
+<p class="resumen tenue">{{ miles .Total }} resultados en eBay {{ $f.Marketplace.Nombre }}</p>
+
+{{ if .Tarjetas }}
+<ul class="rejilla">
+    {{ range .Tarjetas }}
+    <li class="tarjeta">
+        <a class="tarjeta-enlace" href="{{ .Enlace }}">
+            <span class="tarjeta-foto">{{ if .Imagen }}<img src="{{ .Imagen }}" alt="" loading="lazy">{{ else }}<span class="sin-foto">Sin foto</span>{{ end }}</span>
+            <span class="tarjeta-titulo">{{ .Titulo }}</span>
+        </a>
+
+        <div class="tarjeta-precio">
+            <span class="precio">{{ .Precio }}</span>
+            {{ if .Tachado }}<s class="tachado">{{ .Tachado }}</s>{{ end }}
+            {{ if .Descuento }}<span class="etiqueta etiqueta-acento">{{ .Descuento }}</span>{{ end }}
+        </div>
+        {{ if .PrecioOrigen }}<p class="origen tenue">{{ .PrecioOrigen }} del vendedor</p>{{ end }}
+
+        {{ if .Subasta }}
+        <p class="subasta">
+            <span class="etiqueta">Subasta</span>
+            {{ if eq .Pujas 1 }}1 puja{{ else }}{{ .Pujas }} pujas{{ end }} · {{ .Restante }}
+            <span class="tenue">· cierra el {{ .Cierre }}</span>
+        </p>
+        {{ end }}
+
+        <ul class="tarjeta-datos tenue">
+            {{ if .EnvioGratis }}<li class="gratis">Envío gratis</li>{{ else if .Envio }}<li>+ {{ .Envio }} de envío</li>{{ end }}
+            {{ if .Estado }}<li>{{ .Estado }}</li>{{ end }}
+            {{ if .Ofertas }}<li>Acepta ofertas</li>{{ end }}
+            {{ if .Pais }}<li>Desde {{ .Pais }}</li>{{ end }}
+            {{ if .Vendedor }}<li>{{ .Vendedor }}{{ if .Valoracion }} ({{ .Valoracion }}){{ end }}</li>{{ end }}
+        </ul>
+    </li>
+    {{ end }}
+</ul>
+
+{{ if .Paginas }}
+<nav class="paginacion" aria-label="Páginas de resultados">
+    {{ if .Anterior }}<a href="{{ .Anterior }}" rel="prev">← Anterior</a>{{ end }}
+    {{ range .Paginas }}
+        {{ if .Hueco }}<span class="hueco">…</span>
+        {{ else if .Actual }}<span class="actual" aria-current="page">{{ .Numero }}</span>
+        {{ else }}<a href="{{ .Enlace }}">{{ .Numero }}</a>{{ end }}
+    {{ end }}
+    {{ if .Siguiente }}<a href="{{ .Siguiente }}" rel="next">Siguiente →</a>{{ end }}
+</nav>
+{{ end }}
+
+{{ else }}
+<section class="aviso aviso-neutro">
+    <h1>Sin resultados</h1>
+    <p>No hay artículos que coincidan con esta búsqueda y estos filtros.</p>
+</section>
+{{ end }}
+{{ end }}{{ end }}
+{{ end }}

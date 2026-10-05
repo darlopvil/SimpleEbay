@@ -1,0 +1,458 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"log"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"unicode/utf8"
+)
+
+const (
+	// 48 se reparte bien en rejillas de 2, 3, 4 y 6 columnas.
+	porPagina = 48
+
+	// La API no devuelve más allá del resultado 10.000 de una búsqueda.
+	maxResultados = 10000
+	maxPaginas    = maxResultados / porPagina
+
+	// eBay rechaza consultas muy largas; se recorta antes de enviarla.
+	maxConsulta = 200
+
+	cookieMarketplace = "mp"
+)
+
+type opcion struct {
+	Valor    string
+	Etiqueta string
+}
+
+var (
+	opcionesOrden = []opcion{
+		{"", "Mejor coincidencia"},
+		{"price", "Precio + envío: más bajo"},
+		{"-price", "Precio + envío: más alto"},
+		{"newlyListed", "Recién publicados"},
+		{"endingSoonest", "Terminan antes"},
+	}
+	opcionesEstado = []opcion{
+		{"", "Cualquier estado"},
+		{"NEW", "Nuevo"},
+		{"USED", "Usado"},
+	}
+	opcionesCompra = []opcion{
+		{"", "Todos los formatos"},
+		{"FIXED_PRICE", "¡Cómpralo ya!"},
+		{"AUCTION", "Subastas"},
+	}
+)
+
+func opcionValida(lista []opcion, valor string) bool {
+	for _, o := range lista {
+		if o.Valor == valor {
+			return true
+		}
+	}
+	return false
+}
+
+// filtrosBusqueda es lo que el usuario ha pedido, ya validado. Todo valor que
+// no se reconoce se descarta en lugar de pasarlo a la API.
+type filtrosBusqueda struct {
+	Consulta    string
+	Marketplace marketplace
+	Orden       string
+	Estado      string
+	Compra      string
+	Min         string
+	Max         string
+	Pagina      int
+}
+
+// normalizarPrecio acepta "12,5" o "12.5" y devuelve "12.5". Cualquier cosa
+// que no sea un importe positivo se ignora.
+func normalizarPrecio(s string) string {
+	s = strings.TrimSpace(strings.Replace(s, ",", ".", 1))
+	n, err := strconv.ParseFloat(s, 64)
+	if err != nil || n < 0 || n > 1e9 {
+		return ""
+	}
+	return strconv.FormatFloat(n, 'f', -1, 64)
+}
+
+// esHTTPS indica si la petición llegó cifrada al proxy inverso, para marcar
+// la cookie como Secure solo cuando tiene sentido.
+func esHTTPS(r *http.Request) bool {
+	return r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
+}
+
+// marketplaceElegido toma el marketplace del parámetro mp si es válido, y en
+// ese caso lo recuerda en una cookie. Sin parámetro, usa la cookie.
+func marketplaceElegido(w http.ResponseWriter, r *http.Request) marketplace {
+	if id := r.URL.Query().Get("mp"); id != "" {
+		if m, ok := buscarMarketplace(id); ok {
+			http.SetCookie(w, &http.Cookie{
+				Name:     cookieMarketplace,
+				Value:    m.ID,
+				Path:     "/",
+				MaxAge:   365 * 24 * 3600,
+				HttpOnly: true,
+				Secure:   esHTTPS(r),
+				SameSite: http.SameSiteLaxMode,
+			})
+			return m
+		}
+	}
+	if c, err := r.Cookie(cookieMarketplace); err == nil {
+		if m, ok := buscarMarketplace(c.Value); ok {
+			return m
+		}
+	}
+	m, _ := buscarMarketplace(marketplacePorDefecto)
+	return m
+}
+
+func leerFiltros(w http.ResponseWriter, r *http.Request) filtrosBusqueda {
+	q := r.URL.Query()
+	f := filtrosBusqueda{
+		Consulta:    strings.TrimSpace(q.Get("q")),
+		Marketplace: marketplaceElegido(w, r),
+		Min:         normalizarPrecio(q.Get("min")),
+		Max:         normalizarPrecio(q.Get("max")),
+		Pagina:      1,
+	}
+	if utf8.RuneCountInString(f.Consulta) > maxConsulta {
+		f.Consulta = string([]rune(f.Consulta)[:maxConsulta])
+	}
+	if v := q.Get("orden"); opcionValida(opcionesOrden, v) {
+		f.Orden = v
+	}
+	if v := q.Get("estado"); opcionValida(opcionesEstado, v) {
+		f.Estado = v
+	}
+	if v := q.Get("compra"); opcionValida(opcionesCompra, v) {
+		f.Compra = v
+	}
+	if n, err := strconv.Atoi(q.Get("pagina")); err == nil && n > 1 {
+		f.Pagina = min(n, maxPaginas)
+	}
+	return f
+}
+
+// enlace devuelve la URL de esta misma búsqueda en otra página. Se incluye
+// el marketplace para que los enlaces no dependan de la cookie.
+func (f filtrosBusqueda) enlace(pagina int) string {
+	v := url.Values{}
+	v.Set("q", f.Consulta)
+	v.Set("mp", f.Marketplace.ID)
+	for clave, valor := range map[string]string{
+		"orden": f.Orden, "estado": f.Estado, "compra": f.Compra,
+		"min": f.Min, "max": f.Max,
+	} {
+		if valor != "" {
+			v.Set(clave, valor)
+		}
+	}
+	if pagina > 1 {
+		v.Set("pagina", strconv.Itoa(pagina))
+	}
+	return "/s?" + v.Encode()
+}
+
+// consultaAPI traduce los filtros a los parámetros de item_summary/search.
+func (f filtrosBusqueda) consultaAPI() url.Values {
+	v := url.Values{}
+	v.Set("q", f.Consulta)
+	v.Set("limit", strconv.Itoa(porPagina))
+	v.Set("offset", strconv.Itoa((f.Pagina-1)*porPagina))
+	if f.Orden != "" {
+		v.Set("sort", f.Orden)
+	}
+
+	var filtro []string
+	if f.Estado != "" {
+		filtro = append(filtro, "conditions:{"+f.Estado+"}")
+	}
+	if f.Compra != "" {
+		filtro = append(filtro, "buyingOptions:{"+f.Compra+"}")
+	}
+	// La API exige priceCurrency junto a price. Solo con el máximo hacen
+	// falta los dos puntos delante; solo con el mínimo, ninguno.
+	if f.Min != "" || f.Max != "" {
+		rango := f.Min
+		if f.Max != "" {
+			rango += ".." + f.Max
+		}
+		filtro = append(filtro, "price:["+rango+"]", "priceCurrency:"+f.Marketplace.Moneda)
+	}
+	if len(filtro) > 0 {
+		v.Set("filter", strings.Join(filtro, ","))
+	}
+	return v
+}
+
+// Estructuras de la respuesta de la API, solo con los campos que se usan.
+
+type importeAPI struct {
+	Valor        string `json:"value"`
+	Moneda       string `json:"currency"`
+	ValorOrigen  string `json:"convertedFromValue"`
+	MonedaOrigen string `json:"convertedFromCurrency"`
+}
+
+// texto da el importe en la moneda del marketplace.
+func (i *importeAPI) texto() string {
+	if i == nil {
+		return ""
+	}
+	return formatoDinero(i.Valor, i.Moneda)
+}
+
+// textoOrigen da el importe original cuando eBay lo ha convertido desde la
+// moneda del vendedor.
+func (i *importeAPI) textoOrigen() string {
+	if i == nil || i.ValorOrigen == "" {
+		return ""
+	}
+	return formatoDinero(i.ValorOrigen, i.MonedaOrigen)
+}
+
+type imagenAPI struct {
+	URL string `json:"imageUrl"`
+}
+
+type vendedorAPI struct {
+	Usuario    string `json:"username"`
+	Porcentaje string `json:"feedbackPercentage"`
+	Puntos     int    `json:"feedbackScore"`
+}
+
+type resumenAPI struct {
+	ItemID     string      `json:"itemId"`
+	LegacyID   string      `json:"legacyItemId"`
+	Titulo     string      `json:"title"`
+	Imagen     *imagenAPI  `json:"image"`
+	Precio     *importeAPI `json:"price"`
+	PujaActual *importeAPI `json:"currentBidPrice"`
+	Pujas      int         `json:"bidCount"`
+	Fin        string      `json:"itemEndDate"`
+	Formatos   []string    `json:"buyingOptions"`
+	Estado     string      `json:"condition"`
+	EstadoID   string      `json:"conditionId"`
+	Marketing  *struct {
+		Original  *importeAPI `json:"originalPrice"`
+		Descuento string      `json:"discountPercentage"`
+	} `json:"marketingPrice"`
+	Envios []struct {
+		Coste *importeAPI `json:"shippingCost"`
+	} `json:"shippingOptions"`
+	Ubicacion *struct {
+		Pais string `json:"country"`
+	} `json:"itemLocation"`
+	Vendedor *vendedorAPI `json:"seller"`
+}
+
+type respuestaBusquedaAPI struct {
+	Total     int          `json:"total"`
+	Resumenes []resumenAPI `json:"itemSummaries"`
+}
+
+// tarjeta es un resultado listo para pintar: todo el formato se resuelve
+// aquí y la plantilla solo coloca textos.
+type tarjeta struct {
+	Enlace       string
+	Titulo       string
+	Imagen       string
+	Precio       string
+	PrecioOrigen string
+	Tachado      string
+	Descuento    string
+	Subasta      bool
+	Pujas        int
+	Cierre       string
+	Restante     string
+	Ofertas      bool
+	Envio        string
+	EnvioGratis  bool
+	Estado       string
+	Pais         string
+	Vendedor     string
+	Valoracion   string
+}
+
+func contiene(lista []string, valor string) bool {
+	for _, v := range lista {
+		if v == valor {
+			return true
+		}
+	}
+	return false
+}
+
+// enlaceFicha apunta a la ficha propia del artículo. El ID es el mismo que
+// usa eBay en sus URL, de modo que /itm/{id} se corresponde con la de eBay.
+// Las variaciones llevan su identificador en ?var=, igual que allí.
+func enlaceFicha(legacyID, itemID string) string {
+	enlace := "/itm/" + url.PathEscape(legacyID)
+	partes := strings.Split(itemID, "|")
+	if len(partes) == 3 && partes[2] != "0" && partes[2] != "" {
+		enlace += "?var=" + url.QueryEscape(partes[2])
+	}
+	return enlace
+}
+
+func nuevaTarjeta(r resumenAPI) tarjeta {
+	t := tarjeta{
+		Enlace:  enlaceFicha(r.LegacyID, r.ItemID),
+		Titulo:  r.Titulo,
+		Subasta: contiene(r.Formatos, "AUCTION"),
+		Ofertas: contiene(r.Formatos, "BEST_OFFER"),
+		Estado:  nombreEstado(r.Estado, r.EstadoID),
+	}
+	if r.Imagen != nil {
+		t.Imagen = rutaImagen(r.Imagen.URL, 500)
+	}
+
+	precio := r.Precio
+	if t.Subasta && r.PujaActual != nil {
+		precio = r.PujaActual
+		t.Pujas = r.Pujas
+		t.Cierre = formatoFechaHora(r.Fin)
+		t.Restante = tiempoRestante(r.Fin)
+	}
+	t.Precio = precio.texto()
+	t.PrecioOrigen = precio.textoOrigen()
+
+	if r.Marketing != nil && r.Marketing.Original != nil {
+		t.Tachado = r.Marketing.Original.texto()
+		if r.Marketing.Descuento != "" {
+			t.Descuento = "-" + strings.TrimSuffix(r.Marketing.Descuento, ".0") + " %"
+		}
+	}
+
+	if len(r.Envios) > 0 && r.Envios[0].Coste != nil {
+		if esCero(r.Envios[0].Coste.Valor) {
+			t.EnvioGratis = true
+		} else {
+			t.Envio = r.Envios[0].Coste.texto()
+		}
+	}
+
+	if r.Ubicacion != nil {
+		t.Pais = nombrePais(r.Ubicacion.Pais)
+	}
+	if r.Vendedor != nil {
+		t.Vendedor = r.Vendedor.Usuario
+		t.Valoracion = formatoPorcentaje(r.Vendedor.Porcentaje)
+		if r.Vendedor.Puntos > 0 {
+			t.Valoracion += " · " + formatoEntero(r.Vendedor.Puntos)
+		}
+	}
+	return t
+}
+
+type enlacePagina struct {
+	Numero int
+	Enlace string
+	Actual bool
+	Hueco  bool
+}
+
+type resultadoBusqueda struct {
+	Total     int
+	Tarjetas  []tarjeta
+	Paginas   []enlacePagina
+	Anterior  string
+	Siguiente string
+}
+
+// paginacion devuelve la primera y la última página, y las dos vecinas de la
+// actual a cada lado, con huecos donde se salta.
+func paginacion(f filtrosBusqueda, total int) ([]enlacePagina, string, string) {
+	ultima := min((total+porPagina-1)/porPagina, maxPaginas)
+	if ultima <= 1 {
+		return nil, "", ""
+	}
+	var paginas []enlacePagina
+	anterior := 0
+	for n := 1; n <= ultima; n++ {
+		if n != 1 && n != ultima && (n < f.Pagina-2 || n > f.Pagina+2) {
+			continue
+		}
+		if anterior != 0 && n-anterior > 1 {
+			paginas = append(paginas, enlacePagina{Hueco: true})
+		}
+		paginas = append(paginas, enlacePagina{Numero: n, Enlace: f.enlace(n), Actual: n == f.Pagina})
+		anterior = n
+	}
+	var previa, siguiente string
+	if f.Pagina > 1 {
+		previa = f.enlace(f.Pagina - 1)
+	}
+	if f.Pagina < ultima {
+		siguiente = f.enlace(f.Pagina + 1)
+	}
+	return paginas, previa, siguiente
+}
+
+var cacheBusquedas = nuevaCache[respuestaBusquedaAPI]()
+
+func buscar(ctx context.Context, ebay *clienteEbay, f filtrosBusqueda) (*resultadoBusqueda, error) {
+	consulta := f.consultaAPI()
+	clave := f.Marketplace.ID + "\x00" + consulta.Encode()
+
+	resp, ok := cacheBusquedas.obtener(clave)
+	if !ok {
+		if err := ebay.peticion(ctx, f.Marketplace.ID, "/buy/browse/v1/item_summary/search", consulta, &resp); err != nil {
+			return nil, err
+		}
+		cacheBusquedas.guardar(clave, resp)
+	}
+
+	res := &resultadoBusqueda{Total: resp.Total}
+	for _, r := range resp.Resumenes {
+		res.Tarjetas = append(res.Tarjetas, nuevaTarjeta(r))
+	}
+	res.Paginas, res.Anterior, res.Siguiente = paginacion(f, resp.Total)
+	return res, nil
+}
+
+// mensajeError explica al usuario un fallo de la API sin ocultar el detalle
+// técnico, que en una instancia personal es justo lo que hace falta ver.
+func mensajeError(err error) (string, string) {
+	var e *errorEbay
+	if errors.As(err, &e) {
+		if e.Estado == http.StatusTooManyRequests {
+			return "Se ha agotado el cupo diario de la API de eBay. Vuelve a intentarlo cuando se reinicie.", e.Error()
+		}
+		return "eBay no ha podido atender la petición.", e.Error()
+	}
+	return "No se pudo contactar con eBay.", err.Error()
+}
+
+func manejadorBusqueda(ebay *clienteEbay) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		f := leerFiltros(w, r)
+		if f.Consulta == "" {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		datos := datosPagina{
+			Titulo:   f.Consulta,
+			Consulta: f.Consulta,
+			Filtros:  &f,
+		}
+		res, err := buscar(r.Context(), ebay, f)
+		if err != nil {
+			log.Printf("búsqueda %q en %s: %v", f.Consulta, f.Marketplace.ID, err)
+			datos.Error, datos.Detalle = mensajeError(err)
+			renderizar(w, http.StatusBadGateway, "resultados", datos)
+			return
+		}
+		datos.Resultados = res
+		renderizar(w, http.StatusOK, "resultados", datos)
+	}
+}
