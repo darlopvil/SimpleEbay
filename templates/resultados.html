@@ -45,7 +45,7 @@
 {{ else }}{{ with .Resultados }}
 <p class="resumen tenue">
     {{ miles .Total }} resultados en eBay {{ $f.Marketplace.Nombre }}
-    {{ if .Descartados }}· {{ .Descartados }} ocultos en esta página porque eBay los devolvió fuera del rango de precio{{ end }}
+    {{ if .Descartados }}· {{ .Descartados }} ocultos porque eBay los devolvió fuera del rango de precio{{ end }}
 </p>
 
 {{ if .Tarjetas }}
@@ -83,6 +83,12 @@
     </li>
     {{ end }}
 </ul>
+{{ else }}
+<section class="aviso aviso-neutro">
+    <h1>Sin resultados</h1>
+    <p>No hay artículos que coincidan con esta búsqueda y estos filtros.</p>
+</section>
+{{ end }}
 
 {{ if .Paginas }}
 <nav class="paginacion" aria-label="Páginas de resultados">
@@ -94,13 +100,6 @@
     {{ end }}
     {{ if .Siguiente }}<a href="{{ .Siguiente }}" rel="next">Siguiente →</a>{{ end }}
 </nav>
-{{ end }}
-
-{{ else }}
-<section class="aviso aviso-neutro">
-    <h1>Sin resultados</h1>
-    <p>No hay artículos que coincidan con esta búsqueda y estos filtros.</p>
-</section>
 {{ end }}
 {{ end }}{{ end }}
 {{ end }}

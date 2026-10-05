@@ -12,8 +12,16 @@ import (
 )
 
 const (
-	// 48 se reparte bien en rejillas de 2, 3, 4 y 6 columnas.
-	porPagina = 48
+	// 60 llena filas completas en rejillas de 2, 3, 4, 5 y 6 columnas.
+	porPagina = 60
+
+	// A eBay se le piden bloques de tres páginas en una sola llamada. La
+	// paginación por offset de la API no es estable entre llamadas: un mismo
+	// artículo puede salir al final de una página y al principio de la
+	// siguiente. Dentro de un bloque se eliminan esas repeticiones, y de paso
+	// pasar de página no gasta cupo hasta cambiar de bloque.
+	paginasPorBloque = 3
+	porBloque        = porPagina * paginasPorBloque
 
 	// La API no devuelve más allá del resultado 10.000 de una búsqueda.
 	maxResultados = 10000
@@ -162,12 +170,20 @@ func (f filtrosBusqueda) enlace(pagina int) string {
 	return "/s?" + v.Encode()
 }
 
-// consultaAPI traduce los filtros a los parámetros de item_summary/search.
+// bloque devuelve el número de bloque (desde 0) al que pertenece la página.
+func (f filtrosBusqueda) bloque() int {
+	return (f.Pagina - 1) / paginasPorBloque
+}
+
+// consultaAPI traduce los filtros a los parámetros de item_summary/search
+// para el bloque de la página pedida. El último bloque se recorta para no
+// pasar del resultado 10.000, que la API rechaza.
 func (f filtrosBusqueda) consultaAPI() url.Values {
+	offset := f.bloque() * porBloque
 	v := url.Values{}
 	v.Set("q", f.Consulta)
-	v.Set("limit", strconv.Itoa(porPagina))
-	v.Set("offset", strconv.Itoa((f.Pagina-1)*porPagina))
+	v.Set("limit", strconv.Itoa(min(porBloque, maxResultados-offset)))
+	v.Set("offset", strconv.Itoa(offset))
 	if f.Orden != "" {
 		v.Set("sort", f.Orden)
 	}
@@ -399,7 +415,7 @@ type enlacePagina struct {
 
 type resultadoBusqueda struct {
 	Total int
-	// Descartados cuenta los artículos de esta página que eBay devolvió
+	// Descartados cuenta los artículos del bloque actual que eBay devolvió
 	// fuera del rango de precio pedido.
 	Descartados int
 	Tarjetas    []tarjeta
@@ -451,13 +467,28 @@ func buscar(ctx context.Context, ebay *clienteEbay, f filtrosBusqueda) (*resulta
 		cacheBusquedas.guardar(clave, resp)
 	}
 
+	// Se limpia el bloque entero antes de repartirlo en páginas, para que
+	// las páginas salgan completas aunque haya repetidos o descartados.
 	res := &resultadoBusqueda{Total: resp.Total}
+	vistos := map[string]bool{}
+	var validos []resumenAPI
 	for _, r := range resp.Resumenes {
+		if vistos[r.ItemID] {
+			continue
+		}
+		vistos[r.ItemID] = true
 		if f.fueraDeRango(r) {
 			res.Descartados++
 			continue
 		}
-		res.Tarjetas = append(res.Tarjetas, nuevaTarjeta(r))
+		validos = append(validos, r)
+	}
+
+	inicio := ((f.Pagina - 1) % paginasPorBloque) * porPagina
+	if inicio < len(validos) {
+		for _, r := range validos[inicio:min(inicio+porPagina, len(validos))] {
+			res.Tarjetas = append(res.Tarjetas, nuevaTarjeta(r))
+		}
 	}
 	res.Paginas, res.Anterior, res.Siguiente = paginacion(f, resp.Total)
 	return res, nil
