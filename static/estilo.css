@@ -833,14 +833,7 @@ a:hover {
     font-size: 1rem;
 }
 
-.imagen-externa {
-    display: inline-block;
-    margin: 0.2rem 0;
-    padding: 0.2rem 0.6rem;
-    font-size: 0.85rem;
-    border: 1px dashed var(--borde);
-    border-radius: 6px;
-}
+
 
 /* Estilos del vendedor que se conservan, traducidos a clases porque la
    política de contenido no admite estilos en línea. */

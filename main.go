@@ -150,6 +150,7 @@ func main() {
 	mux.HandleFunc("/s", manejadorBusqueda(ebay))
 	mux.HandleFunc("/itm/", manejadorFicha(ebay))
 	mux.HandleFunc("/img/", proxyImagen)
+	mux.HandleFunc("/ext", proxyExterno)
 	mux.Handle("/static/", http.FileServer(http.FS(estaticosFS)))
 
 	srv := &http.Server{

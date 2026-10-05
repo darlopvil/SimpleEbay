@@ -52,7 +52,7 @@
 <ul class="rejilla">
     {{ range .Tarjetas }}
     <li class="tarjeta">
-        <a class="tarjeta-enlace" href="{{ .Enlace }}">
+        <a class="tarjeta-enlace" href="{{ .Enlace }}" target="_blank" rel="noopener">
             <span class="tarjeta-foto">{{ if .Imagen }}<img src="{{ .Imagen }}" alt="" loading="lazy">{{ else }}<span class="sin-foto">Sin foto</span>{{ end }}</span>
             <span class="tarjeta-titulo">{{ .Titulo }}</span>
         </a>

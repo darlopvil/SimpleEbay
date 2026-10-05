@@ -16,9 +16,9 @@ import (
 // plantillas de terceros: hojas de estilo y fuentes externas, bloques ocultos
 // con galerías duplicadas, imágenes en otros servidores y scripts. Se limpia
 // en dos pasos. Primero se recorre el árbol para quitar lo que no debe
-// mostrarse aunque fuera inofensivo y reescribir imágenes y enlaces. Después
-// bluemonday aplica una lista blanca de etiquetas y atributos, que es la
-// barrera de seguridad de verdad.
+// mostrarse aunque fuera inofensivo y llevar las imágenes a los proxies.
+// Después bluemonday aplica una lista blanca de etiquetas y atributos, que es
+// la barrera de seguridad de verdad.
 
 // Elementos que se eliminan con todo su contenido.
 var elementosDescartados = map[atom.Atom]bool{
@@ -131,50 +131,20 @@ func enlaceInterno(href string) string {
 	return interno
 }
 
-// imagenExterna sustituye una imagen alojada fuera de eBay por un enlace a
-// ella. Cargarla directamente revelaría la IP del usuario a ese servidor;
-// así decide él si quiere abrirla. Si la imagen ya estaba dentro de un
-// enlace, se deja solo el texto, porque un enlace no puede contener otro.
-func imagenExterna(img *html.Node, src string, dentroDeEnlace bool) *html.Node {
-	u, err := url.Parse(src)
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return nil
-	}
-	texto := "Imagen externa (" + u.Hostname() + ")"
-	if alt, _ := atributo(img, "alt"); strings.TrimSpace(alt) != "" {
-		texto = "Imagen externa: " + strings.TrimSpace(alt) + " (" + u.Hostname() + ")"
-	}
-	nodoTexto := &html.Node{Type: html.TextNode, Data: texto}
-	if dentroDeEnlace {
-		return nodoTexto
-	}
-	a := &html.Node{
-		Type:     html.ElementNode,
-		Data:     "a",
-		DataAtom: atom.A,
-		Attr: []html.Attribute{
-			{Key: "href", Val: u.String()},
-			{Key: "class", Val: "imagen-externa"},
-		},
-	}
-	a.AppendChild(nodoTexto)
-	return a
-}
-
 // depurar recorre el árbol eliminando y reescribiendo nodos.
-func depurar(n *html.Node, dentroDeEnlace bool) {
+func depurar(n *html.Node) {
 	for c := n.FirstChild; c != nil; {
 		siguiente := c.NextSibling
 		if c.Type == html.CommentNode {
 			n.RemoveChild(c)
 		} else if c.Type == html.ElementNode {
-			depurarElemento(n, c, dentroDeEnlace)
+			depurarElemento(n, c)
 		}
 		c = siguiente
 	}
 }
 
-func depurarElemento(padre, c *html.Node, dentroDeEnlace bool) {
+func depurarElemento(padre, c *html.Node) {
 	estilo, _ := atributo(c, "style")
 	if elementosDescartados[c.DataAtom] || patronOculto.MatchString(estilo) {
 		padre.RemoveChild(c)
@@ -191,24 +161,29 @@ func depurarElemento(padre, c *html.Node, dentroDeEnlace bool) {
 
 	switch c.DataAtom {
 	case atom.Img:
+		// Las fotos de eBay van por su proxy y las demás por el de imágenes
+		// externas. Lo que no sea una dirección web válida se elimina.
 		src, _ := atributo(c, "src")
 		src = strings.TrimSpace(src)
-		if ruta := rutaImagen(src, 0); ruta != "" {
-			fijarAtributo(c, "src", ruta)
-			fijarAtributo(c, "loading", "lazy")
-		} else if sustituto := imagenExterna(c, src, dentroDeEnlace); sustituto != nil {
-			padre.InsertBefore(sustituto, c)
-			padre.RemoveChild(c)
-		} else {
-			padre.RemoveChild(c)
+		ruta := rutaImagen(src, 0)
+		if ruta == "" {
+			ruta = rutaImagenExterna(src)
 		}
+		if ruta == "" {
+			padre.RemoveChild(c)
+			return
+		}
+		fijarAtributo(c, "src", ruta)
+		fijarAtributo(c, "loading", "lazy")
+		// srcset apuntaría directamente al servidor original.
+		quitarAtributo(c, "srcset")
 	case atom.A:
 		if href, ok := atributo(c, "href"); ok {
 			fijarAtributo(c, "href", enlaceInterno(strings.TrimSpace(href)))
 		}
-		depurar(c, true)
+		depurar(c)
 	default:
-		depurar(c, dentroDeEnlace)
+		depurar(c)
 	}
 }
 
@@ -224,9 +199,8 @@ func nuevaPolitica() *bluemonday.Policy {
 	p.AllowElements("center", "font", "span", "div", "u")
 	p.AllowAttrs("align").Matching(alineaciones).OnElements("p", "div", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6")
 	// Al depurar se quitan todas las clases del vendedor; las únicas que
-	// quedan son las propias, traducidas de sus estilos o puestas a los
-	// enlaces de imágenes externas.
-	p.AllowAttrs("class").Matching(regexp.MustCompile(`^(d-[a-z-]+|imagen-externa)( d-[a-z-]+)*$`)).Globally()
+	// quedan son las propias, traducidas de sus estilos.
+	p.AllowAttrs("class").Matching(regexp.MustCompile(`^d-[a-z-]+( d-[a-z-]+)*$`)).Globally()
 	p.AllowAttrs("loading").Matching(regexp.MustCompile(`^lazy$`)).OnElements("img")
 
 	// Los enlaces externos se abren aparte y sin enviar la página de origen.
@@ -245,7 +219,7 @@ func sanearDescripcion(crudo string) template.HTML {
 	if err != nil {
 		return ""
 	}
-	depurar(doc, false)
+	depurar(doc)
 
 	var buf bytes.Buffer
 	var cuerpo func(*html.Node) *html.Node
