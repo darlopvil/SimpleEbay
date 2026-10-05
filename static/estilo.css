@@ -420,3 +420,275 @@ a:hover {
     font-size: 0.8rem;
     word-break: break-word;
 }
+
+/* Ficha de artículo */
+
+.migas {
+    font-size: 0.82rem;
+    margin: 0 0 1rem;
+}
+
+.ficha {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 820px) {
+    .ficha {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.25rem;
+    }
+}
+
+/* Galería sin JavaScript: una tira con desplazamiento que encaja foto a
+   foto, y miniaturas que son enlaces a cada una. */
+.galeria-principal {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    aspect-ratio: 1;
+    background: #fff;
+    border-radius: var(--radio);
+    border: 1px solid var(--borde);
+}
+
+.galeria-principal > a {
+    flex: 0 0 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    scroll-snap-align: center;
+}
+
+.galeria-principal > .sin-foto {
+    margin: auto;
+}
+
+.galeria-principal img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.galeria-miniaturas {
+    display: flex;
+    gap: 0.4rem;
+    overflow-x: auto;
+    padding: 0.5rem 0 0.25rem;
+}
+
+.galeria-miniaturas a {
+    flex: 0 0 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.galeria-miniaturas a:hover,
+.galeria-miniaturas a:focus {
+    outline: 2px solid var(--acento);
+}
+
+.galeria-miniaturas img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.nota {
+    display: block;
+    font-size: 0.82rem;
+    margin-top: 0.2rem;
+    white-space: pre-line;
+}
+
+.ficha-titulo {
+    font-size: clamp(1.25rem, 2.4vw, 1.6rem);
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+    margin: 0 0 0.5rem;
+}
+
+.ficha-precio {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.ficha-precio .precio {
+    font-size: 2rem;
+}
+
+.ficha-subasta {
+    margin: 0.75rem 0;
+    padding: 0.6rem 0.8rem;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.ficha-subasta p {
+    margin: 0.15rem 0;
+}
+
+.etiqueta-campo {
+    font-size: 0.8rem;
+    color: var(--tenue);
+    margin: 1rem 0 0.35rem;
+}
+
+.ficha-variantes ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.variante {
+    display: inline-block;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+    font-size: 0.88rem;
+    text-decoration: none;
+    background: var(--superficie);
+}
+
+.variante.actual {
+    color: var(--acento-texto);
+    background: var(--acento);
+    border-color: var(--acento);
+    font-weight: 600;
+}
+
+.ficha-datos {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.45rem 1rem;
+    margin: 1.25rem 0;
+    font-size: 0.92rem;
+}
+
+.ficha-datos dt {
+    color: var(--tenue);
+}
+
+.ficha-datos dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.ficha-salida {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+}
+
+.boton {
+    display: inline-block;
+    font-weight: 600;
+    padding: 0.55rem 1.3rem;
+    color: var(--acento-texto);
+    background: var(--acento);
+    border-radius: var(--radio);
+    text-decoration: none;
+}
+
+.ficha-bloque {
+    margin-top: 2rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.ficha-bloque h2 {
+    font-size: 1.1rem;
+    margin: 0 0 0.75rem;
+}
+
+.ficha-bloque details {
+    margin-top: 0.75rem;
+}
+
+.ficha-bloque summary {
+    cursor: pointer;
+    color: var(--acento);
+}
+
+.tabla-desplazable {
+    overflow-x: auto;
+}
+
+.tabla-envios {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.tabla-envios th,
+.tabla-envios td {
+    text-align: left;
+    padding: 0.45rem 0.75rem 0.45rem 0;
+    border-bottom: 1px solid var(--borde);
+    vertical-align: top;
+}
+
+.tabla-envios th {
+    font-weight: 600;
+    color: var(--tenue);
+    font-size: 0.8rem;
+}
+
+.gratis {
+    color: var(--acento);
+    font-weight: 600;
+}
+
+.especificaciones {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+    gap: 0 2rem;
+    margin: 0;
+    font-size: 0.92rem;
+}
+
+.especificaciones div {
+    display: grid;
+    grid-template-columns: minmax(8rem, 40%) 1fr;
+    gap: 1rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px dashed var(--borde);
+}
+
+.especificaciones dt {
+    color: var(--tenue);
+}
+
+.especificaciones dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.descripcion-corta {
+    white-space: pre-line;
+}
+
+.lista-simple {
+    margin: 0.5rem 0 0;
+    padding-left: 1.2rem;
+    font-size: 0.9rem;
+}

@@ -24,6 +24,7 @@ type datosPagina struct {
 
 	Filtros    *filtrosBusqueda
 	Resultados *resultadoBusqueda
+	Ficha      *ficha
 }
 
 var funcionesPlantilla = template.FuncMap{
@@ -32,6 +33,7 @@ var funcionesPlantilla = template.FuncMap{
 	"opcionesEstado": func() []opcion { return opcionesEstado },
 	"opcionesCompra": func() []opcion { return opcionesCompra },
 	"miles":          formatoEntero,
+	"add":            func(a, b int) int { return a + b },
 }
 
 // Cada página se parsea en su propio conjunto junto a la base, porque todas
@@ -48,6 +50,7 @@ var plantillas = map[string]*template.Template{
 	"inicio":     cargarPlantilla("inicio"),
 	"error":      cargarPlantilla("error"),
 	"resultados": cargarPlantilla("resultados"),
+	"ficha":      cargarPlantilla("ficha"),
 }
 
 // renderizar ejecuta la plantilla en un búfer antes de escribir nada. Así un

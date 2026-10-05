@@ -2,6 +2,7 @@
 <section class="aviso">
     <h1>{{ .Titulo }}</h1>
     <p>{{ .Mensaje }}</p>
+    {{ if .Detalle }}<p class="tenue detalle">{{ .Detalle }}</p>{{ end }}
     <p><a href="/">Volver a la portada</a></p>
 </section>
 {{ end }}

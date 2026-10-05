@@ -1,0 +1,130 @@
+{{ define "contenido" }}
+{{ with .Ficha }}
+{{ if .Categoria }}<p class="migas tenue">{{ .Categoria }}</p>{{ end }}
+
+<article class="ficha">
+    <section class="ficha-galeria" aria-label="Fotos">
+        {{ if .Fotos }}
+        <div class="galeria-principal">
+            {{ range $i, $f := .Fotos }}
+            <a id="foto-{{ $i }}" href="{{ $f.Original }}" target="_blank" rel="noopener" title="Ver a tamaño completo">
+                <img src="{{ $f.Grande }}" alt=""{{ if $i }} loading="lazy"{{ end }}>
+            </a>
+            {{ end }}
+        </div>
+        {{ if gt (len .Fotos) 1 }}
+        <div class="galeria-miniaturas">
+            {{ range $i, $f := .Fotos }}<a href="#foto-{{ $i }}" aria-label="Foto {{ add $i 1 }}"><img src="{{ $f.Miniatura }}" alt="" loading="lazy"></a>{{ end }}
+        </div>
+        {{ end }}
+        {{ else }}
+        <div class="galeria-principal"><span class="sin-foto">Sin foto</span></div>
+        {{ end }}
+        {{ if .FotosExternas }}<p class="tenue nota">{{ .FotosExternas }} {{ if eq .FotosExternas 1 }}foto alojada{{ else }}fotos alojadas{{ end }} fuera de eBay no se muestran.</p>{{ end }}
+    </section>
+
+    <section class="ficha-compra">
+        <h1 class="ficha-titulo">{{ .Titulo }}</h1>
+        {{ if .Opiniones }}<p class="tenue">★ {{ .NotaMedia }} de 5 · {{ miles .Opiniones }} {{ if eq .Opiniones 1 }}opinión{{ else }}opiniones{{ end }} del producto</p>{{ end }}
+
+        <div class="ficha-precio">
+            <span class="precio">{{ .Precio }}</span>
+            {{ if .Tachado }}<s class="tachado">{{ .Tachado }}</s>{{ end }}
+            {{ if .Descuento }}<span class="etiqueta etiqueta-acento">{{ .Descuento }}</span>{{ end }}
+        </div>
+        {{ if .PrecioOrigen }}<p class="origen tenue">{{ .PrecioOrigen }} en la moneda del vendedor</p>{{ end }}
+
+        {{ if .Subasta }}
+        <div class="ficha-subasta">
+            <p><span class="etiqueta">Subasta</span> {{ if .Pujadores }}{{ .Pujadores }} {{ if eq .Pujadores 1 }}pujador{{ else }}pujadores{{ end }}{{ else }}Sin pujas{{ end }}{{ if .PujaMinima }} · puja mínima {{ .PujaMinima }}{{ end }}</p>
+            <p>Cierra el {{ .Cierre }} <span class="tenue">({{ .Restante }})</span></p>
+        </div>
+        {{ end }}
+        {{ if .Ofertas }}<p class="tenue">El vendedor acepta ofertas.</p>{{ end }}
+
+        {{ if .Variantes }}
+        <div class="ficha-variantes">
+            <p class="etiqueta-campo">{{ if .EjeVariacion }}{{ .EjeVariacion }}{{ else }}Opciones{{ end }}</p>
+            <ul>
+                {{ range .Variantes }}
+                <li>{{ if .Actual }}<span class="variante actual" aria-current="true">{{ .Etiqueta }}{{ if .Precio }} · {{ .Precio }}{{ end }}</span>{{ else }}<a class="variante" href="{{ .Enlace }}">{{ .Etiqueta }}{{ if .Precio }} · {{ .Precio }}{{ end }}</a>{{ end }}</li>
+                {{ end }}
+            </ul>
+        </div>
+        {{ end }}
+
+        <dl class="ficha-datos">
+            {{ if .Estado }}<dt>Estado</dt><dd>{{ .Estado }}{{ if .NotaEstado }}<span class="nota tenue">{{ .NotaEstado }}</span>{{ end }}</dd>{{ end }}
+            {{ if .Disponibilidad }}<dt>Cantidad</dt><dd>{{ .Disponibilidad }}</dd>{{ end }}
+            {{ if .Ubicacion }}<dt>Ubicación</dt><dd>{{ .Ubicacion }}</dd>{{ end }}
+            {{ if .Devoluciones }}<dt>Devoluciones</dt><dd>{{ .Devoluciones }}{{ if .NotaDevolucion }}<span class="nota tenue">{{ .NotaDevolucion }}</span>{{ end }}</dd>{{ end }}
+            {{ if .Pagos }}<dt>Pagos</dt><dd>{{ .Pagos }}</dd>{{ end }}
+        </dl>
+
+        {{ if .URLeBay }}
+        <p class="ficha-salida">
+            <a class="boton" href="{{ .URLeBay }}" rel="noopener noreferrer">Ver en eBay</a>
+            {{ if .MarketplaceAnuncio }}<span class="tenue">Anuncio publicado en {{ .MarketplaceAnuncio }}</span>{{ end }}
+        </p>
+        {{ end }}
+    </section>
+</article>
+
+{{ if .Envios }}
+<section class="ficha-bloque">
+    <h2>Envío</h2>
+    <div class="tabla-desplazable">
+        <table class="tabla-envios">
+            <thead><tr><th>Servicio</th><th>Coste</th><th>Importación</th><th>Entrega estimada</th></tr></thead>
+            <tbody>
+                {{ range .Envios }}
+                <tr>
+                    <td>{{ .Servicio }}</td>
+                    <td class="sin-corte">{{ if .Gratis }}<span class="gratis">Gratis</span>{{ else if .Coste }}{{ .Coste }}{{ else }}—{{ end }}</td>
+                    <td class="sin-corte">{{ if .Importacion }}{{ .Importacion }}{{ else }}—{{ end }}</td>
+                    <td>{{ if .Entrega }}{{ .Entrega }}{{ else }}—{{ end }}</td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
+</section>
+{{ end }}
+
+{{ if .Vendedor }}
+<section class="ficha-bloque">
+    <h2>Vendedor</h2>
+    <p><strong>{{ .Vendedor }}</strong> · {{ if .Profesional }}Vendedor profesional{{ else }}Particular{{ end }}{{ if .Valoracion }} · {{ .Valoracion }}{{ end }}</p>
+    {{ if .Legal }}
+    <details>
+        <summary>Información legal del vendedor</summary>
+        <dl class="ficha-datos">
+            {{ range .Legal }}<dt>{{ .Nombre }}</dt><dd>{{ .Valor }}</dd>{{ end }}
+        </dl>
+    </details>
+    {{ end }}
+    {{ if .Responsables }}
+    <details>
+        <summary>Persona responsable en la UE</summary>
+        <ul class="lista-simple">{{ range .Responsables }}<li>{{ . }}</li>{{ end }}</ul>
+    </details>
+    {{ end }}
+</section>
+{{ end }}
+
+{{ if .Aspectos }}
+<section class="ficha-bloque">
+    <h2>Especificaciones</h2>
+    <dl class="especificaciones">
+        {{ range .Aspectos }}<div><dt>{{ .Nombre }}</dt><dd>{{ .Valor }}</dd></div>{{ end }}
+    </dl>
+</section>
+{{ end }}
+
+<section class="ficha-bloque">
+    <h2>Descripción</h2>
+    {{ if .DescripcionCorta }}<p class="descripcion-corta">{{ .DescripcionCorta }}</p>{{ end }}
+    {{ if .URLeBay }}<p class="tenue">La descripción completa del vendedor está en <a href="{{ .URLeBay }}" rel="noopener noreferrer">el anuncio de eBay</a>.</p>{{ end }}
+</section>
+{{ end }}
+{{ end }}
