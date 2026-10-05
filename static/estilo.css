@@ -792,3 +792,67 @@ a:hover {
     padding-left: 1.2rem;
     font-size: 0.9rem;
 }
+
+/* Descripción del vendedor, ya saneada */
+
+.descripcion {
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+
+.descripcion img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Muchos vendedores maquetan con tablas de ancho fijo: se desplazan dentro
+   de su caja en lugar de ensanchar la página. */
+.descripcion table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+}
+
+.descripcion td,
+.descripcion th {
+    padding: 0.25rem 0.5rem;
+    vertical-align: top;
+}
+
+.descripcion h1,
+.descripcion h2,
+.descripcion h3 {
+    font-size: 1.1rem;
+    margin: 1rem 0 0.5rem;
+}
+
+.descripcion h4,
+.descripcion h5,
+.descripcion h6 {
+    font-size: 1rem;
+}
+
+.imagen-externa {
+    display: inline-block;
+    margin: 0.2rem 0;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.85rem;
+    border: 1px dashed var(--borde);
+    border-radius: 6px;
+}
+
+/* Estilos del vendedor que se conservan, traducidos a clases porque la
+   política de contenido no admite estilos en línea. */
+.d-pre { white-space: pre; }
+.d-pre-line { white-space: pre-line; }
+.d-pre-wrap { white-space: pre-wrap; }
+.d-nowrap { white-space: nowrap; }
+.d-izquierda { text-align: left; }
+.d-derecha { text-align: right; }
+.d-centro { text-align: center; }
+.d-justificado { text-align: justify; }
+.d-negrita { font-weight: 700; }
+.d-cursiva { font-style: italic; }
+.d-subrayado { text-decoration: underline; }
+.d-tachado { text-decoration: line-through; }

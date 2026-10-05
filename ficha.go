@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"html/template"
 	"log"
 	"net/http"
 	"net/url"
@@ -51,6 +52,7 @@ type itemAPI struct {
 	LegacyID         string      `json:"legacyItemId"`
 	Titulo           string      `json:"title"`
 	DescripcionCorta string      `json:"shortDescription"`
+	Descripcion      string      `json:"description"`
 	Precio           *importeAPI `json:"price"`
 	PujaActual       *importeAPI `json:"currentBidPrice"`
 	PujaMinima       *importeAPI `json:"minimumPriceToBid"`
@@ -122,6 +124,27 @@ type itemAPI struct {
 
 type grupoAPI struct {
 	Items []itemAPI `json:"items"`
+	// Los artículos de un grupo no traen su descripción: va aparte, con la
+	// lista de variaciones a las que corresponde.
+	Descripciones []struct {
+		Descripcion string   `json:"description"`
+		Items       []string `json:"itemIds"`
+	} `json:"commonDescriptions"`
+}
+
+// descripcionDe busca la descripción común que corresponde a una variación.
+func (g *grupoAPI) descripcionDe(itemID string) string {
+	for _, d := range g.Descripciones {
+		for _, id := range d.Items {
+			if id == itemID {
+				return d.Descripcion
+			}
+		}
+	}
+	if len(g.Descripciones) == 1 {
+		return g.Descripciones[0].Descripcion
+	}
+	return ""
 }
 
 // Lo que se pinta en la ficha. Como en las tarjetas, todo el formato se
@@ -200,6 +223,7 @@ type ficha struct {
 
 	Aspectos         []dato
 	DescripcionCorta string
+	Descripcion      template.HTML
 
 	URLeBay            string
 	MarketplaceAnuncio string
@@ -532,6 +556,12 @@ func nuevaFicha(it *itemAPI, grupo *grupoAPI) *ficha {
 		f.Aspectos = append(f.Aspectos, dato{Nombre: a.Nombre, Valor: a.Valor})
 	}
 	f.EjeVariacion, f.Variantes = variantes(grupo, it.ItemID)
+
+	descripcion := it.Descripcion
+	if descripcion == "" && grupo != nil {
+		descripcion = grupo.descripcionDe(it.ItemID)
+	}
+	f.Descripcion = sanearDescripcion(descripcion)
 	return f
 }
 

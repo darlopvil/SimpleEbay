@@ -130,8 +130,12 @@
 
 <section class="ficha-bloque">
     <h2>Descripción</h2>
+    {{ if .Descripcion }}
+    <div class="descripcion">{{ .Descripcion }}</div>
+    {{ else }}
     {{ if .DescripcionCorta }}<p class="descripcion-corta">{{ .DescripcionCorta }}</p>{{ end }}
     {{ if .URLeBay }}<p class="tenue">La descripción completa del vendedor está en <a href="{{ .URLeBay }}" target="_blank" rel="noopener noreferrer">el anuncio de eBay</a>.</p>{{ end }}
+    {{ end }}
 </section>
 {{ end }}
 {{ end }}
