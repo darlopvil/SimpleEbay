@@ -5,18 +5,25 @@
 <article class="ficha">
     <section class="ficha-galeria" aria-label="Fotos">
         {{ if .Fotos }}
-        <div class="galeria-principal">
-            {{ range $i, $f := .Fotos }}
-            <a id="foto-{{ $i }}" href="{{ $f.Original }}" target="_blank" rel="noopener" title="Ver a tamaño completo">
-                <img src="{{ $f.Grande }}" alt=""{{ if $i }} loading="lazy"{{ end }}>
-            </a>
+        <div class="galeria">
+            {{ range $i, $f := .Fotos }}<input class="selector-foto" type="radio" name="foto" id="foto-{{ $i }}"{{ if not $i }} checked{{ end }}>{{ end }}
+            <div class="galeria-principal">
+                {{ range $i, $f := .Fotos }}
+                <div class="foto">
+                    <a href="{{ $f.Original }}" target="_blank" rel="noopener" title="Ver a tamaño completo"><img src="{{ $f.Grande }}" alt=""{{ if $i }} loading="lazy"{{ end }}></a>
+                    {{ if ne $f.Siguiente $i }}
+                    <label class="flecha flecha-anterior" for="foto-{{ $f.Anterior }}" title="Foto anterior">‹</label>
+                    <label class="flecha flecha-siguiente" for="foto-{{ $f.Siguiente }}" title="Foto siguiente">›</label>
+                    {{ end }}
+                </div>
+                {{ end }}
+            </div>
+            {{ if gt (len .Fotos) 1 }}
+            <div class="galeria-miniaturas">
+                {{ range $i, $f := .Fotos }}<label for="foto-{{ $i }}" title="Foto {{ add $i 1 }}"><img src="{{ $f.Miniatura }}" alt="" loading="lazy"></label>{{ end }}
+            </div>
             {{ end }}
         </div>
-        {{ if gt (len .Fotos) 1 }}
-        <div class="galeria-miniaturas">
-            {{ range $i, $f := .Fotos }}<a href="#foto-{{ $i }}" aria-label="Foto {{ add $i 1 }}"><img src="{{ $f.Miniatura }}" alt="" loading="lazy"></a>{{ end }}
-        </div>
-        {{ end }}
         {{ else }}
         <div class="galeria-principal"><span class="sin-foto">Sin foto</span></div>
         {{ end }}
@@ -63,7 +70,7 @@
 
         {{ if .URLeBay }}
         <p class="ficha-salida">
-            <a class="boton" href="{{ .URLeBay }}" rel="noopener noreferrer">Ver en eBay</a>
+            <a class="boton" href="{{ .URLeBay }}" target="_blank" rel="noopener noreferrer">Ver en eBay</a>
             {{ if .MarketplaceAnuncio }}<span class="tenue">Anuncio publicado en {{ .MarketplaceAnuncio }}</span>{{ end }}
         </p>
         {{ end }}
@@ -124,7 +131,7 @@
 <section class="ficha-bloque">
     <h2>Descripción</h2>
     {{ if .DescripcionCorta }}<p class="descripcion-corta">{{ .DescripcionCorta }}</p>{{ end }}
-    {{ if .URLeBay }}<p class="tenue">La descripción completa del vendedor está en <a href="{{ .URLeBay }}" rel="noopener noreferrer">el anuncio de eBay</a>.</p>{{ end }}
+    {{ if .URLeBay }}<p class="tenue">La descripción completa del vendedor está en <a href="{{ .URLeBay }}" target="_blank" rel="noopener noreferrer">el anuncio de eBay</a>.</p>{{ end }}
 </section>
 {{ end }}
 {{ end }}

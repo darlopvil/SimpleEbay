@@ -131,7 +131,14 @@ type foto struct {
 	Grande    string
 	Miniatura string
 	Original  string
+	// Índices de la foto anterior y la siguiente, para las flechas.
+	Anterior  int
+	Siguiente int
 }
+
+// La hoja de estilos trae reglas para 24 fotos, el máximo que eBay admite en
+// un anuncio. Las variaciones suman las fotos del grupo y podrían pasarse.
+const maxFotos = 24
 
 type filaEnvio struct {
 	Servicio    string
@@ -339,6 +346,13 @@ func (it *itemAPI) fotos() ([]foto, int) {
 			Miniatura: rutaImagen(f.URL, 140),
 			Original:  original,
 		})
+	}
+	if len(fotos) > maxFotos {
+		fotos = fotos[:maxFotos]
+	}
+	for i := range fotos {
+		fotos[i].Anterior = (i + len(fotos) - 1) % len(fotos)
+		fotos[i].Siguiente = (i + 1) % len(fotos)
 	}
 	return fotos, externas
 }

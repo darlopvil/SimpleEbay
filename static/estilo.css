@@ -442,45 +442,89 @@ a:hover {
     }
 }
 
-/* Galería sin JavaScript: una tira con desplazamiento que encaja foto a
-   foto, y miniaturas que son enlaces a cada una. */
+/* Galería sin JavaScript: un botón de radio oculto por foto. Las miniaturas
+   y las flechas son <label> que lo marcan, y la hoja de estilos muestra la
+   foto marcada. Sin anclas de por medio, pulsar no desplaza la página. */
+.selector-foto {
+    display: none;
+}
+
 .galeria-principal {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
+    position: relative;
     aspect-ratio: 1;
     background: #fff;
     border-radius: var(--radio);
     border: 1px solid var(--borde);
-}
-
-.galeria-principal > a {
-    flex: 0 0 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    scroll-snap-align: center;
+    overflow: hidden;
 }
 
 .galeria-principal > .sin-foto {
-    margin: auto;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.galeria-principal img {
+.foto {
+    display: none;
+    position: absolute;
+    inset: 0;
+}
+
+.foto > a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.foto img {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
+}
+
+.flecha {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: #1f1d1a;
+    background: rgb(255 255 255 / 85%);
+    border: 1px solid #ddd;
+    border-radius: 50%;
+    cursor: pointer;
+    user-select: none;
+}
+
+.flecha:hover {
+    background: #fff;
+}
+
+.flecha-anterior {
+    left: 0.6rem;
+}
+
+.flecha-siguiente {
+    right: 0.6rem;
 }
 
 .galeria-miniaturas {
     display: flex;
     gap: 0.4rem;
     overflow-x: auto;
-    padding: 0.5rem 0 0.25rem;
+    padding: 0.5rem 2px 0.25rem;
 }
 
-.galeria-miniaturas a {
+.galeria-miniaturas label {
     flex: 0 0 64px;
     height: 64px;
     display: flex;
@@ -490,16 +534,72 @@ a:hover {
     border: 1px solid var(--borde);
     border-radius: 6px;
     overflow: hidden;
+    cursor: pointer;
 }
 
-.galeria-miniaturas a:hover,
-.galeria-miniaturas a:focus {
-    outline: 2px solid var(--acento);
+.galeria-miniaturas label:hover {
+    border-color: var(--acento);
 }
 
 .galeria-miniaturas img {
     max-width: 100%;
     max-height: 100%;
+}
+
+/* Una regla por posición, hasta las 24 fotos que admite eBay. */
+.selector-foto:nth-of-type(1):checked ~ .galeria-principal > .foto:nth-of-type(1),
+.selector-foto:nth-of-type(2):checked ~ .galeria-principal > .foto:nth-of-type(2),
+.selector-foto:nth-of-type(3):checked ~ .galeria-principal > .foto:nth-of-type(3),
+.selector-foto:nth-of-type(4):checked ~ .galeria-principal > .foto:nth-of-type(4),
+.selector-foto:nth-of-type(5):checked ~ .galeria-principal > .foto:nth-of-type(5),
+.selector-foto:nth-of-type(6):checked ~ .galeria-principal > .foto:nth-of-type(6),
+.selector-foto:nth-of-type(7):checked ~ .galeria-principal > .foto:nth-of-type(7),
+.selector-foto:nth-of-type(8):checked ~ .galeria-principal > .foto:nth-of-type(8),
+.selector-foto:nth-of-type(9):checked ~ .galeria-principal > .foto:nth-of-type(9),
+.selector-foto:nth-of-type(10):checked ~ .galeria-principal > .foto:nth-of-type(10),
+.selector-foto:nth-of-type(11):checked ~ .galeria-principal > .foto:nth-of-type(11),
+.selector-foto:nth-of-type(12):checked ~ .galeria-principal > .foto:nth-of-type(12),
+.selector-foto:nth-of-type(13):checked ~ .galeria-principal > .foto:nth-of-type(13),
+.selector-foto:nth-of-type(14):checked ~ .galeria-principal > .foto:nth-of-type(14),
+.selector-foto:nth-of-type(15):checked ~ .galeria-principal > .foto:nth-of-type(15),
+.selector-foto:nth-of-type(16):checked ~ .galeria-principal > .foto:nth-of-type(16),
+.selector-foto:nth-of-type(17):checked ~ .galeria-principal > .foto:nth-of-type(17),
+.selector-foto:nth-of-type(18):checked ~ .galeria-principal > .foto:nth-of-type(18),
+.selector-foto:nth-of-type(19):checked ~ .galeria-principal > .foto:nth-of-type(19),
+.selector-foto:nth-of-type(20):checked ~ .galeria-principal > .foto:nth-of-type(20),
+.selector-foto:nth-of-type(21):checked ~ .galeria-principal > .foto:nth-of-type(21),
+.selector-foto:nth-of-type(22):checked ~ .galeria-principal > .foto:nth-of-type(22),
+.selector-foto:nth-of-type(23):checked ~ .galeria-principal > .foto:nth-of-type(23),
+.selector-foto:nth-of-type(24):checked ~ .galeria-principal > .foto:nth-of-type(24) {
+    display: block;
+}
+
+.selector-foto:nth-of-type(1):checked ~ .galeria-miniaturas > label:nth-of-type(1),
+.selector-foto:nth-of-type(2):checked ~ .galeria-miniaturas > label:nth-of-type(2),
+.selector-foto:nth-of-type(3):checked ~ .galeria-miniaturas > label:nth-of-type(3),
+.selector-foto:nth-of-type(4):checked ~ .galeria-miniaturas > label:nth-of-type(4),
+.selector-foto:nth-of-type(5):checked ~ .galeria-miniaturas > label:nth-of-type(5),
+.selector-foto:nth-of-type(6):checked ~ .galeria-miniaturas > label:nth-of-type(6),
+.selector-foto:nth-of-type(7):checked ~ .galeria-miniaturas > label:nth-of-type(7),
+.selector-foto:nth-of-type(8):checked ~ .galeria-miniaturas > label:nth-of-type(8),
+.selector-foto:nth-of-type(9):checked ~ .galeria-miniaturas > label:nth-of-type(9),
+.selector-foto:nth-of-type(10):checked ~ .galeria-miniaturas > label:nth-of-type(10),
+.selector-foto:nth-of-type(11):checked ~ .galeria-miniaturas > label:nth-of-type(11),
+.selector-foto:nth-of-type(12):checked ~ .galeria-miniaturas > label:nth-of-type(12),
+.selector-foto:nth-of-type(13):checked ~ .galeria-miniaturas > label:nth-of-type(13),
+.selector-foto:nth-of-type(14):checked ~ .galeria-miniaturas > label:nth-of-type(14),
+.selector-foto:nth-of-type(15):checked ~ .galeria-miniaturas > label:nth-of-type(15),
+.selector-foto:nth-of-type(16):checked ~ .galeria-miniaturas > label:nth-of-type(16),
+.selector-foto:nth-of-type(17):checked ~ .galeria-miniaturas > label:nth-of-type(17),
+.selector-foto:nth-of-type(18):checked ~ .galeria-miniaturas > label:nth-of-type(18),
+.selector-foto:nth-of-type(19):checked ~ .galeria-miniaturas > label:nth-of-type(19),
+.selector-foto:nth-of-type(20):checked ~ .galeria-miniaturas > label:nth-of-type(20),
+.selector-foto:nth-of-type(21):checked ~ .galeria-miniaturas > label:nth-of-type(21),
+.selector-foto:nth-of-type(22):checked ~ .galeria-miniaturas > label:nth-of-type(22),
+.selector-foto:nth-of-type(23):checked ~ .galeria-miniaturas > label:nth-of-type(23),
+.selector-foto:nth-of-type(24):checked ~ .galeria-miniaturas > label:nth-of-type(24) {
+    outline: 2px solid var(--acento);
+    outline-offset: -2px;
 }
 
 .nota {
