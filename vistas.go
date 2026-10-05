@@ -29,7 +29,7 @@ type datosPagina struct {
 
 var funcionesPlantilla = template.FuncMap{
 	"marketplaces":      func() []marketplace { return marketplaces },
-	"opcionesOrden":     func() []opcion { return opcionesOrden },
+	"opcionesOrden":     func() []opcion { return ordenesDisponibles },
 	"opcionesEstado":    func() []opcion { return opcionesEstado },
 	"opcionesCompra":    func() []opcion { return opcionesCompra },
 	"opcionesUbicacion": func() []opcion { return opcionesUbicacion },

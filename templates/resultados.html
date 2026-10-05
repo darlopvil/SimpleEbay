@@ -8,7 +8,7 @@
             {{ range marketplaces }}<option value="{{ .ID }}"{{ if eq .ID $f.Marketplace.ID }} selected{{ end }}>{{ .Nombre }}</option>{{ end }}
         </select>
     </label>
-    <label>
+    <label class="filtro-orden">
         <span>Orden</span>
         <select name="orden">
             {{ range opcionesOrden }}<option value="{{ .Valor }}"{{ if eq .Valor $f.Orden }} selected{{ end }}>{{ .Etiqueta }}</option>{{ end }}

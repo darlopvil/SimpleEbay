@@ -217,6 +217,10 @@ a:hover {
     min-width: 0;
 }
 
+.filtros .filtro-orden {
+    flex-basis: 170px;
+}
+
 .filtros .filtro-precio {
     flex-basis: 190px;
 }

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -39,12 +40,13 @@ type opcion struct {
 }
 
 var (
-	// eBay ordena por precio con el envío incluido, igual que se aplica el
-	// rango de precio.
+	// Con el destino de la cabecera X-EBAY-C-ENDUSERCTX, eBay ordena por el
+	// precio con el envío a ese destino incluido, igual que se aplica el
+	// rango de precio. Comprobado con la API.
 	opcionesOrden = []opcion{
 		{"", "Relevancia"},
-		{"price", "Más barato"},
-		{"-price", "Más caro"},
+		{"price", "Precio + envío ↑"},
+		{"-price", "Precio + envío ↓"},
 		{"newlyListed", "Más recientes"},
 		{"endingSoonest", "Terminan antes"},
 	}
@@ -83,6 +85,15 @@ var (
 		{"AU", "Australia"},
 	}
 )
+
+// La ordenación por distancia mide desde el código postal de
+// SIMPLEEBAY_ENVIO_CP, así que solo se ofrece si está configurado.
+var ordenesDisponibles = func() []opcion {
+	if os.Getenv("SIMPLEEBAY_ENVIO_CP") == "" {
+		return opcionesOrden
+	}
+	return append(opcionesOrden[:len(opcionesOrden):len(opcionesOrden)], opcion{"distance", "Más cercanos"})
+}()
 
 func opcionValida(lista []opcion, valor string) bool {
 	for _, o := range lista {
@@ -163,7 +174,7 @@ func leerFiltros(w http.ResponseWriter, r *http.Request) filtrosBusqueda {
 	if utf8.RuneCountInString(f.Consulta) > maxConsulta {
 		f.Consulta = string([]rune(f.Consulta)[:maxConsulta])
 	}
-	if v := q.Get("orden"); opcionValida(opcionesOrden, v) {
+	if v := q.Get("orden"); opcionValida(ordenesDisponibles, v) {
 		f.Orden = v
 	}
 	if v := q.Get("estado"); opcionValida(opcionesEstado, v) {
