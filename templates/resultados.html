@@ -154,7 +154,7 @@
             {{ if .Ofertas }}<li>Acepta ofertas</li>{{ end }}
             {{ if .Pais }}<li>Desde {{ .Pais }}</li>{{ end }}
             {{ if .Vendedor }}<li>{{ if .RutaVendedor }}<a class="enlace-vendedor" href="{{ .RutaVendedor }}" target="_blank" rel="noopener" title="Ver todos sus artículos">{{ .Vendedor }}</a>{{ else }}{{ .Vendedor }}{{ end }}{{ if .Valoracion }} ({{ .Valoracion }}){{ end }}</li>{{ end }}
-            {{ if .RutaProducto }}<li><a class="enlace-vendedor" href="{{ .RutaProducto }}" target="_blank" rel="noopener">Más anuncios de este producto</a></li>{{ end }}
+            {{ if .RutaProducto }}<li><a class="enlace-vendedor" href="{{ .RutaProducto }}" target="_blank" rel="noopener" title="Todos los anuncios de este mismo producto del catálogo">Comparar con otros vendedores</a></li>{{ end }}
         </ul>
     </li>
     {{ end }}
