@@ -7,4 +7,12 @@
         <button type="submit">Buscar</button>
     </form>
 </section>
+{{ if .Raices }}
+<section class="explorar">
+    <h2>O explora por categorías <span class="tenue">· eBay {{ .Marketplace.Nombre }}</span></h2>
+    <ul class="chips">
+        {{ range .Raices }}<li><a href="{{ .Enlace }}">{{ .Nombre }}</a></li>{{ end }}
+    </ul>
+</section>
+{{ end }}
 {{ end }}

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -106,8 +107,22 @@ func main() {
 		os.Exit(probar(ebay, *marketplace, *sonda))
 	}
 
+	// El contenedor tiene un tope de 64 MB. Sin límite propio, el recolector
+	// deja crecer el montón hasta el doble de lo vivo antes de actuar, y la
+	// descarga de un árbol de categorías grande lo acerca al tope. Medido con
+	// seis árboles de 5,4 MB y treinta búsquedas: pico de 48 MB sin límite
+	// propio, de 41 MB con este. GOMEMLIMIT en el entorno manda sobre él.
+	if os.Getenv("GOMEMLIMIT") == "" {
+		debug.SetMemoryLimit(32 << 20)
+	}
+
 	// Los tipos de cambio se descargan y renuevan en segundo plano.
 	go mantenerTiposCambio()
+
+	// El árbol de categorías del marketplace por defecto se pide ya, para
+	// que la portada y la primera búsqueda lo tengan.
+	arboles.ebay = ebay
+	arboles.obtener(marketplacePorDefecto)
 
 	// Se pide el token al arrancar para que un keyset mal copiado o sin
 	// activar salga en los logs desde el primer momento, y no con la primera
@@ -135,7 +150,8 @@ func main() {
 			})
 			return
 		}
-		renderizar(w, http.StatusOK, "inicio", datosPagina{Inicio: true})
+		m := marketplaceElegido(w, r)
+		renderizar(w, http.StatusOK, "inicio", datosPagina{Inicio: true, Raices: raicesPortada(m), Marketplace: m})
 	})
 
 	// Los navegadores piden /favicon.ico sin mirar el <head>.

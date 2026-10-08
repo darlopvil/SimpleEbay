@@ -25,6 +25,10 @@ type datosPagina struct {
 	Filtros    *filtrosBusqueda
 	Resultados *resultadoBusqueda
 	Ficha      *ficha
+
+	// Raices son las categorías raíz que se ofrecen en la portada.
+	Raices      []enlaceCategoria
+	Marketplace marketplace
 }
 
 var funcionesPlantilla = template.FuncMap{

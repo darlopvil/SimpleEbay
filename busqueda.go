@@ -129,6 +129,7 @@ type filtrosBusqueda struct {
 	Compra      string
 	Desde       string
 	Vendedor    string // sin consulta, lista todos sus artículos
+	Categoria   string // ID de categoría de eBay
 	// Rango de precio en euros, envío incluido.
 	Min    string
 	Max    string
@@ -193,6 +194,9 @@ func leerFiltros(w http.ResponseWriter, r *http.Request) filtrosBusqueda {
 	if v := strings.TrimSpace(q.Get("vendedor")); patronVendedor.MatchString(v) {
 		f.Vendedor = v
 	}
+	if v := strings.TrimSpace(q.Get("categoria")); patronCategoria.MatchString(v) {
+		f.Categoria = v
+	}
 	if v := q.Get("orden"); opcionValida(ordenesDisponibles, v) {
 		f.Orden = v
 	}
@@ -217,7 +221,7 @@ func (f filtrosBusqueda) enlace(pagina int) string {
 	v := url.Values{}
 	v.Set("mp", f.Marketplace.ID)
 	for clave, valor := range map[string]string{
-		"q": f.Consulta, "vendedor": f.Vendedor,
+		"q": f.Consulta, "vendedor": f.Vendedor, "categoria": f.Categoria,
 		"orden": f.Orden, "estado": f.Estado, "compra": f.Compra,
 		"desde": f.Desde, "min": f.Min, "max": f.Max,
 	} {
@@ -268,9 +272,17 @@ func (f filtrosBusqueda) consultaAPI() url.Values {
 	// categorías; una q vacía la rechaza con el error 12001. Comprobado.
 	if f.Consulta != "" {
 		v.Set("q", f.Consulta)
-	} else {
+	}
+	switch {
+	case f.Categoria != "":
+		v.Set("category_ids", f.Categoria)
+	case f.Consulta == "":
 		v.Set("category_ids", "0")
 	}
+	// El desglose por categorías viene en la misma respuesta y no altera los
+	// resultados: mismo total y mismos artículos en el mismo orden con y sin
+	// él. Sin MATCHING_ITEMS llegaría el desglose sin artículos.
+	v.Set("fieldgroups", "MATCHING_ITEMS,CATEGORY_REFINEMENTS")
 	v.Set("limit", strconv.Itoa(min(porBloque, maxResultados-offset)))
 	v.Set("offset", strconv.Itoa(offset))
 	if f.Orden != "" {
@@ -355,6 +367,7 @@ type resumenAPI struct {
 type respuestaBusquedaAPI struct {
 	Total     int          `json:"total"`
 	Resumenes []resumenAPI `json:"itemSummaries"`
+	Desglose  *desgloseAPI `json:"refinement"`
 }
 
 // tarjeta es un resultado listo para pintar: todo el formato se resuelve
@@ -509,6 +522,12 @@ type resultadoBusqueda struct {
 	Paginas     []enlacePagina
 	Anterior    string
 	Siguiente   string
+
+	// Ruta hasta la categoría actual y categorías a las que se puede bajar;
+	// las que no caben en Categorias van plegadas en MasCategorias.
+	Ruta          []enlaceCategoria
+	Categorias    []enlaceCategoria
+	MasCategorias []enlaceCategoria
 }
 
 // paginacion devuelve la primera y la última página, y las dos vecinas de la
@@ -578,6 +597,11 @@ func buscar(ctx context.Context, ebay *clienteEbay, f filtrosBusqueda) (*resulta
 		}
 	}
 	res.Paginas, res.Anterior, res.Siguiente = paginacion(f, resp.Total)
+
+	res.Ruta, res.Categorias = navegacionCategorias(f, resp.Desglose, arboles.obtener(f.Marketplace.ID))
+	if len(res.Categorias) > categoriasVisibles {
+		res.Categorias, res.MasCategorias = res.Categorias[:categoriasVisibles], res.Categorias[categoriasVisibles:]
+	}
 	return res, nil
 }
 
@@ -597,7 +621,7 @@ func mensajeError(err error) (string, string) {
 func manejadorBusqueda(ebay *clienteEbay) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		f := leerFiltros(w, r)
-		if f.Consulta == "" && f.Vendedor == "" {
+		if f.Consulta == "" && f.Vendedor == "" && f.Categoria == "" {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
@@ -614,12 +638,16 @@ func manejadorBusqueda(ebay *clienteEbay) http.HandlerFunc {
 		}
 		res, err := buscar(r.Context(), ebay, f)
 		if err != nil {
-			log.Printf("búsqueda %q (vendedor %q) en %s: %v", f.Consulta, f.Vendedor, f.Marketplace.ID, err)
+			log.Printf("búsqueda %q (vendedor %q, categoría %q) en %s: %v", f.Consulta, f.Vendedor, f.Categoria, f.Marketplace.ID, err)
 			datos.Error, datos.Detalle = mensajeError(err)
 			renderizar(w, http.StatusBadGateway, "resultados", datos)
 			return
 		}
 		datos.Resultados = res
+		// Al recorrer una categoría sin más criterio, el título es su nombre.
+		if f.Consulta == "" && f.Vendedor == "" && len(res.Ruta) > 0 {
+			datos.Titulo = res.Ruta[len(res.Ruta)-1].Nombre
+		}
 		renderizar(w, http.StatusOK, "resultados", datos)
 	}
 }

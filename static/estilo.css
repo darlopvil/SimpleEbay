@@ -257,6 +257,73 @@ a:hover {
     font-size: 0.9rem;
 }
 
+/* Navegación por categorías */
+
+.categorias {
+    margin: 0 0 1rem;
+}
+
+.ruta-categorias {
+    margin: 0 0 0.6rem;
+    font-size: 0.9rem;
+}
+
+.chips {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.chips a {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    font-size: 0.85rem;
+    color: var(--texto);
+    text-decoration: none;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+}
+
+.chips a:hover {
+    border-color: var(--acento);
+    color: var(--acento);
+}
+
+.chips .tenue {
+    font-size: 0.78rem;
+}
+
+.mas-categorias {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.mas-categorias summary {
+    cursor: pointer;
+    color: var(--acento);
+    margin-bottom: 0.4rem;
+}
+
+.explorar {
+    max-width: 860px;
+    margin: 0 auto 3rem;
+    text-align: center;
+}
+
+.explorar h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.8rem;
+}
+
+.explorar .chips {
+    justify-content: center;
+}
+
 .nota-orden {
     margin: -0.6rem 0 1rem;
     font-size: 0.85rem;

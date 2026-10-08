@@ -1,10 +1,11 @@
 {{ define "contenido" }}
 {{ $f := .Filtros }}
 <form class="filtros" action="/s" method="get">
-    {{ if $f.Vendedor }}
-    <input type="hidden" name="vendedor" value="{{ $f.Vendedor }}">
+    {{ if $f.Vendedor }}<input type="hidden" name="vendedor" value="{{ $f.Vendedor }}">{{ end }}
+    {{ if $f.Categoria }}<input type="hidden" name="categoria" value="{{ $f.Categoria }}">{{ end }}
+    {{ if or $f.Vendedor $f.Categoria }}
     <label class="filtro-texto">
-        <span>Buscar entre sus artículos</span>
+        <span>{{ if $f.Vendedor }}Buscar entre sus artículos{{ else }}Buscar en esta categoría{{ end }}</span>
         <input type="search" name="q" value="{{ $f.Consulta }}" placeholder="Todos">
     </label>
     {{ else }}
@@ -57,6 +58,25 @@
     <p class="tenue detalle">{{ .Detalle }}</p>
 </section>
 {{ else }}{{ with .Resultados }}
+{{ if or .Ruta .Categorias }}
+<nav class="categorias" aria-label="Categorías">
+    {{ if .Ruta }}<p class="ruta-categorias">{{ range $i, $c := .Ruta }}{{ if $i }} <span class="tenue">›</span> {{ end }}{{ if $c.Enlace }}<a href="{{ $c.Enlace }}">{{ $c.Nombre }}</a>{{ else }}<strong>{{ $c.Nombre }}</strong>{{ end }}{{ end }}</p>{{ end }}
+    {{ if .Categorias }}
+    <ul class="chips">
+        {{ range .Categorias }}<li><a href="{{ .Enlace }}">{{ .Nombre }} <span class="tenue">{{ miles .Cuenta }}</span></a></li>{{ end }}
+    </ul>
+    {{ if .MasCategorias }}
+    <details class="mas-categorias">
+        <summary>{{ len .MasCategorias }} categorías más</summary>
+        <ul class="chips">
+            {{ range .MasCategorias }}<li><a href="{{ .Enlace }}">{{ .Nombre }} <span class="tenue">{{ miles .Cuenta }}</span></a></li>{{ end }}
+        </ul>
+    </details>
+    {{ end }}
+    {{ end }}
+</nav>
+{{ end }}
+
 <p class="resumen tenue">
     {{ if $f.Vendedor }}
     {{ miles .Total }} {{ if $f.Consulta }}resultados de «{{ $f.Consulta }}» entre los artículos{{ else }}artículos{{ end }}
