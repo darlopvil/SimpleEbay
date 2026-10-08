@@ -215,6 +215,11 @@ type desgloseAPI struct {
 		Nombre string `json:"categoryName"`
 		Cuenta int    `json:"matchCount"`
 	} `json:"categoryDistributions"`
+
+	// Con ASPECT_REFINEMENTS: los aspectos de la categoría dominante, que
+	// llega incluso sin categoría elegida.
+	Dominante string       `json:"dominantCategoryId"`
+	Aspectos  []aspectoAPI `json:"aspectDistributions"`
 }
 
 type enlaceCategoria struct {
@@ -228,6 +233,8 @@ type enlaceCategoria struct {
 // vacía, así que se vuelve a la portada.
 func (f filtrosBusqueda) conCategoria(id string) string {
 	f.Categoria = id
+	// Cada categoría tiene sus propias características.
+	f.Aspectos = nil
 	if f.Categoria == "" && f.Consulta == "" && f.Vendedor == "" {
 		return "/"
 	}

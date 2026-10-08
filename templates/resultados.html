@@ -3,6 +3,7 @@
 <form class="filtros" action="/s" method="get">
     {{ if $f.Vendedor }}<input type="hidden" name="vendedor" value="{{ $f.Vendedor }}">{{ end }}
     {{ if $f.Categoria }}<input type="hidden" name="categoria" value="{{ $f.Categoria }}">{{ end }}
+    {{ range $f.Aspectos }}<input type="hidden" name="asp" value="{{ .Nombre }}:{{ .Valor }}">{{ end }}
     {{ if or $f.Vendedor $f.Categoria }}
     <label class="filtro-texto">
         <span>{{ if $f.Vendedor }}Buscar entre sus artículos{{ else }}Buscar en esta categoría{{ end }}</span>
@@ -75,6 +76,30 @@
     {{ end }}
     {{ end }}
 </nav>
+{{ end }}
+
+{{ if .Activos }}
+<ul class="chips activos" aria-label="Características aplicadas">
+    {{ range .Activos }}<li><a href="{{ .Enlace }}" title="Quitar este filtro">{{ .Nombre }} <span aria-hidden="true">✕</span></a></li>{{ end }}
+</ul>
+{{ end }}
+{{ with .Caracteristicas }}
+<details class="caracteristicas">
+    <summary>Filtrar por características <span class="tenue">· {{ .Resumen }}</span></summary>
+    <form action="/s" method="get">
+        {{ range .Ocultos }}<input type="hidden" name="{{ .Nombre }}" value="{{ .Valor }}">{{ end }}
+        <input type="hidden" name="categoria" value="{{ .Categoria }}">
+        <div class="aspectos">
+            {{ range .Grupos }}
+            <fieldset>
+                <legend>{{ .Nombre }}</legend>
+                {{ range .Valores }}<label><input type="checkbox" name="asp" value="{{ .Clave }}"{{ if .Marcado }} checked{{ end }}> <span>{{ .Valor }}{{ if .Cuenta }} <span class="tenue">{{ miles .Cuenta }}</span>{{ end }}</span></label>{{ end }}
+            </fieldset>
+            {{ end }}
+        </div>
+        <button type="submit">Aplicar</button>
+    </form>
+</details>
 {{ end }}
 
 <p class="resumen tenue">

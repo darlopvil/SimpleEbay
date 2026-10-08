@@ -308,6 +308,82 @@ a:hover {
     margin-bottom: 0.4rem;
 }
 
+/* Filtros por características */
+
+.chips.activos {
+    margin: 0 0 0.8rem;
+}
+
+.chips.activos a {
+    border-color: var(--acento);
+}
+
+.caracteristicas {
+    margin: 0 0 1rem;
+    padding: 0.6rem 1rem;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.caracteristicas summary {
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.caracteristicas[open] summary {
+    margin-bottom: 0.6rem;
+}
+
+.aspectos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+    gap: 0.8rem 1.2rem;
+    margin-bottom: 0.8rem;
+}
+
+.aspectos fieldset {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+}
+
+.aspectos legend {
+    padding: 0;
+    margin-bottom: 0.25rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.aspectos label {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    line-height: 1.35;
+    margin: 0.15rem 0;
+    overflow-wrap: anywhere;
+}
+
+.aspectos .tenue {
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.caracteristicas button {
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.4rem 1rem;
+    color: var(--acento-texto);
+    background: var(--acento);
+    border: 1px solid var(--acento);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
 .explorar {
     max-width: 860px;
     margin: 0 auto 3rem;

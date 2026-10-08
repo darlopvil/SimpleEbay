@@ -130,6 +130,7 @@ type filtrosBusqueda struct {
 	Desde       string
 	Vendedor    string // sin consulta, lista todos sus artículos
 	Categoria   string // ID de categoría de eBay
+	Aspectos    []aspecto
 	// Rango de precio en euros, envío incluido.
 	Min    string
 	Max    string
@@ -196,6 +197,8 @@ func leerFiltros(w http.ResponseWriter, r *http.Request) filtrosBusqueda {
 	}
 	if v := strings.TrimSpace(q.Get("categoria")); patronCategoria.MatchString(v) {
 		f.Categoria = v
+		// Los aspectos son de una categoría: sin ella no significan nada.
+		f.Aspectos = leerAspectos(q["asp"])
 	}
 	if v := q.Get("orden"); opcionValida(ordenesDisponibles, v) {
 		f.Orden = v
@@ -229,6 +232,7 @@ func (f filtrosBusqueda) enlace(pagina int) string {
 			v.Set(clave, valor)
 		}
 	}
+	valoresAspectos(v, f.Aspectos)
 	if pagina > 1 {
 		v.Set("pagina", strconv.Itoa(pagina))
 	}
@@ -279,10 +283,14 @@ func (f filtrosBusqueda) consultaAPI() url.Values {
 	case f.Consulta == "":
 		v.Set("category_ids", "0")
 	}
-	// El desglose por categorías viene en la misma respuesta y no altera los
-	// resultados: mismo total y mismos artículos en el mismo orden con y sin
-	// él. Sin MATCHING_ITEMS llegaría el desglose sin artículos.
-	v.Set("fieldgroups", "MATCHING_ITEMS,CATEGORY_REFINEMENTS")
+	// Los desgloses por categorías y por características vienen en la misma
+	// respuesta y no alteran los resultados: mismo total y mismos artículos
+	// en el mismo orden con y sin ellos. Sin MATCHING_ITEMS llegarían los
+	// desgloses sin artículos.
+	v.Set("fieldgroups", "MATCHING_ITEMS,CATEGORY_REFINEMENTS,ASPECT_REFINEMENTS")
+	if len(f.Aspectos) > 0 {
+		v.Set("aspect_filter", filtroAspectos(f.Categoria, f.Aspectos))
+	}
 	v.Set("limit", strconv.Itoa(min(porBloque, maxResultados-offset)))
 	v.Set("offset", strconv.Itoa(offset))
 	if f.Orden != "" {
@@ -528,6 +536,10 @@ type resultadoBusqueda struct {
 	Ruta          []enlaceCategoria
 	Categorias    []enlaceCategoria
 	MasCategorias []enlaceCategoria
+
+	// Formulario de características y las que ya están aplicadas.
+	Caracteristicas *panelAspectos
+	Activos         []enlaceCategoria
 }
 
 // paginacion devuelve la primera y la última página, y las dos vecinas de la
@@ -570,6 +582,7 @@ func buscar(ctx context.Context, ebay *clienteEbay, f filtrosBusqueda) (*resulta
 		if err := ebay.peticion(ctx, f.Marketplace.ID, "/buy/browse/v1/item_summary/search", consulta, &resp); err != nil {
 			return nil, err
 		}
+		recortarAspectos(resp.Desglose)
 		cacheBusquedas.guardar(clave, resp)
 	}
 
@@ -602,6 +615,8 @@ func buscar(ctx context.Context, ebay *clienteEbay, f filtrosBusqueda) (*resulta
 	if len(res.Categorias) > categoriasVisibles {
 		res.Categorias, res.MasCategorias = res.Categorias[:categoriasVisibles], res.Categorias[categoriasVisibles:]
 	}
+	res.Caracteristicas = nuevoPanelAspectos(f, resp.Desglose)
+	res.Activos = aspectosActivos(f)
 	return res, nil
 }
 
