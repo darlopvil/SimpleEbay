@@ -37,6 +37,31 @@ var tiposFoto = map[string]bool{"image/jpeg": true, "image/png": true, "image/we
 
 var errFotoGrande = errors.New("la foto pasa de 5 MB")
 
+// Fotos que se procesan a la vez, entre todos los visitantes. Cada una ocupa
+// hasta unos 12 MB mientras se lee y se codifica; con este tope la memoria
+// queda acotada aunque lleguen muchas a la vez.
+var turnosFoto = make(chan struct{}, 2)
+
+// mismoOrigen comprueba que el formulario se ha enviado desde esta misma web,
+// para que otra página no pueda usar la instancia como buscador por foto. Los
+// navegadores actuales lo dicen en Sec-Fetch-Site. Con Origin no basta: con la
+// política no-referrer, los navegadores lo mandan como «null» en los POST.
+func mismoOrigen(r *http.Request) bool {
+	switch r.Header.Get("Sec-Fetch-Site") {
+	case "same-origin":
+		return true
+	case "":
+		// Navegador sin Sec-Fetch-Site: se mira Origin.
+	default:
+		return false
+	}
+	esquema := "http"
+	if esHTTPS(r) {
+		esquema = "https"
+	}
+	return r.Header.Get("Origin") == esquema+"://"+r.Host
+}
+
 type resultadoFoto struct {
 	Marketplace marketplace
 	Tarjetas    []tarjeta
@@ -98,6 +123,18 @@ func manejadorFoto(ebay *clienteEbay) http.HandlerFunc {
 		}
 		fallo := func(estado int, mensaje, detalle string) {
 			renderizar(w, estado, "error", datosPagina{Titulo: "Búsqueda por foto", Mensaje: mensaje, Detalle: detalle})
+		}
+		if !mismoOrigen(r) {
+			fallo(http.StatusForbidden, "La foto tiene que enviarse desde el formulario de esta web.", "")
+			return
+		}
+		select {
+		case turnosFoto <- struct{}{}:
+			defer func() { <-turnosFoto }()
+		default:
+			w.Header().Set("Retry-After", "5")
+			fallo(http.StatusServiceUnavailable, "Ahora mismo se están procesando otras fotos. Inténtalo en unos segundos.", "")
+			return
 		}
 
 		// Subir unos megas desde el móvil puede tardar más que el límite
