@@ -166,10 +166,11 @@ func main() {
 		fmt.Fprint(w, "User-agent: *\nDisallow: /\n")
 	})
 
-	mux.HandleFunc("/s", manejadorBusqueda(ebay))
-	mux.HandleFunc("/itm/", manejadorFicha(ebay))
-	mux.HandleFunc("/m/", manejadorCorto)
-	mux.HandleFunc("/foto", manejadorFoto(ebay))
+	// Lo que gasta cupo de la API va con límite por IP.
+	mux.Handle("/s", limitar(limiteConsultas, manejadorBusqueda(ebay)))
+	mux.Handle("/itm/", limitar(limiteConsultas, manejadorFicha(ebay)))
+	mux.Handle("/m/", limitar(limiteConsultas, http.HandlerFunc(manejadorCorto)))
+	mux.Handle("/foto", limitar(limiteFotos, manejadorFoto(ebay)))
 	mux.HandleFunc("/img/", proxyImagen)
 	mux.HandleFunc("/ext", proxyExterno)
 	mux.Handle("/static/", http.FileServer(http.FS(estaticosFS)))
