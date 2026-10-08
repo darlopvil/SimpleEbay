@@ -7,6 +7,17 @@
         <button type="submit">Buscar</button>
     </form>
 </section>
+<section class="buscar-foto" id="foto">
+    <h2>O busca con una foto</h2>
+    <form action="/foto" method="post" enctype="multipart/form-data">
+        <input type="file" name="foto" accept="image/jpeg,image/png,image/webp" required aria-label="Foto">
+        <select name="mp" aria-label="eBay en el que buscar">
+            {{ range marketplacesFoto }}<option value="{{ .ID }}">eBay {{ .Nombre }}</option>{{ end }}
+        </select>
+        <button type="submit">Buscar</button>
+    </form>
+    <p class="tenue">JPEG, PNG o WebP de hasta 5 MB. eBay solo ofrece esta búsqueda en Alemania, Reino Unido, Estados Unidos y Australia. La foto no se guarda.</p>
+</section>
 {{ if .Raices }}
 <section class="explorar">
     <h2>O explora por categorías <span class="tenue">· eBay {{ .Marketplace.Nombre }}</span></h2>

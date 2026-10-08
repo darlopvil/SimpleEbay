@@ -1,0 +1,15 @@
+{{ define "contenido" }}
+{{ with .Foto }}
+<p class="resumen tenue">Parecidos a tu foto en eBay {{ .Marketplace.Nombre }}, del más al menos parecido · <a href="/#foto">Buscar con otra foto</a></p>
+{{ if .Tarjetas }}
+<ul class="rejilla">
+    {{ range .Tarjetas }}{{ template "tarjeta" . }}{{ end }}
+</ul>
+{{ else }}
+<section class="aviso aviso-neutro">
+    <h1>Sin resultados</h1>
+    <p>eBay no ha encontrado nada parecido a esta foto.</p>
+</section>
+{{ end }}
+{{ end }}
+{{ end }}

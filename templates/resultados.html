@@ -126,37 +126,7 @@
 {{ if .Tarjetas }}
 <ul class="rejilla">
     {{ range .Tarjetas }}
-    <li class="tarjeta">
-        <a class="tarjeta-enlace" href="{{ .Enlace }}" target="_blank" rel="noopener">
-            <span class="tarjeta-foto">{{ if .Imagen }}<img src="{{ .Imagen }}" alt="" loading="lazy">{{ else }}<span class="sin-foto">Sin foto</span>{{ end }}</span>
-            <span class="tarjeta-titulo">{{ .Titulo }}</span>
-        </a>
-
-        <div class="tarjeta-precio">
-            <span class="precio">{{ .Precio }}</span>
-            {{ if .Tachado }}<s class="tachado">{{ .Tachado }}</s>{{ end }}
-            {{ if .Descuento }}<span class="etiqueta etiqueta-acento">{{ .Descuento }}</span>{{ end }}
-        </div>
-        {{ if .PrecioOrigen }}<p class="origen tenue">{{ .PrecioOrigen }}</p>{{ end }}
-
-        {{ if .Subasta }}
-        <p class="subasta">
-            <span class="etiqueta">Subasta</span>
-            <span class="sin-corte">{{ if eq .Pujas 1 }}1 puja{{ else }}{{ .Pujas }} pujas{{ end }}</span>
-            · <span class="sin-corte">{{ .Restante }}</span>
-            <span class="tenue sin-corte">· cierra el {{ .Cierre }}</span>
-        </p>
-        {{ end }}
-
-        <ul class="tarjeta-datos tenue">
-            {{ if .EnvioGratis }}<li class="gratis">Envío gratis</li>{{ else if .Envio }}<li>+ {{ .Envio }} de envío</li>{{ end }}
-            {{ if .Estado }}<li>{{ .Estado }}</li>{{ end }}
-            {{ if .Ofertas }}<li>Acepta ofertas</li>{{ end }}
-            {{ if .Pais }}<li>Desde {{ .Pais }}</li>{{ end }}
-            {{ if .Vendedor }}<li>{{ if .RutaVendedor }}<a class="enlace-vendedor" href="{{ .RutaVendedor }}" target="_blank" rel="noopener" title="Ver todos sus artículos">{{ .Vendedor }}</a>{{ else }}{{ .Vendedor }}{{ end }}{{ if .Valoracion }} ({{ .Valoracion }}){{ end }}</li>{{ end }}
-            {{ if .RutaProducto }}<li><a class="enlace-vendedor" href="{{ .RutaProducto }}" target="_blank" rel="noopener" title="Todos los anuncios de este mismo producto del catálogo">Comparar con otros vendedores</a></li>{{ end }}
-        </ul>
-    </li>
+    {{ template "tarjeta" . }}
     {{ end }}
 </ul>
 {{ else if .Descartados }}

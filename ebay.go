@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -181,6 +182,15 @@ func (c *clienteEbay) invalidarToken() {
 // peticion hace un GET a la API y decodifica la respuesta en destino. Si
 // eBay rechaza el token con un 401, se renueva y se reintenta una sola vez.
 func (c *clienteEbay) peticion(ctx context.Context, marketplace, ruta string, consulta url.Values, destino any) error {
+	return c.llamar(ctx, http.MethodGet, marketplace, ruta, consulta, nil, destino)
+}
+
+// peticionJSON es lo mismo con un POST y un cuerpo JSON ya serializado.
+func (c *clienteEbay) peticionJSON(ctx context.Context, marketplace, ruta string, consulta url.Values, cuerpo []byte, destino any) error {
+	return c.llamar(ctx, http.MethodPost, marketplace, ruta, consulta, cuerpo, destino)
+}
+
+func (c *clienteEbay) llamar(ctx context.Context, metodo, marketplace, ruta string, consulta url.Values, cuerpo []byte, destino any) error {
 	for intento := 0; ; intento++ {
 		token, err := c.tokenVigente(ctx)
 		if err != nil {
@@ -191,9 +201,18 @@ func (c *clienteEbay) peticion(ctx context.Context, marketplace, ruta string, co
 		if len(consulta) > 0 {
 			direccion += "?" + consulta.Encode()
 		}
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, direccion, nil)
+		// El lector se crea en cada intento: tras un 401 hay que reenviar el
+		// cuerpo entero.
+		var lector io.Reader
+		if cuerpo != nil {
+			lector = bytes.NewReader(cuerpo)
+		}
+		req, err := http.NewRequestWithContext(ctx, metodo, direccion, lector)
 		if err != nil {
 			return err
+		}
+		if cuerpo != nil {
+			req.Header.Set("Content-Type", "application/json")
 		}
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("X-EBAY-C-MARKETPLACE-ID", marketplace)

@@ -257,6 +257,60 @@ a:hover {
     font-size: 0.9rem;
 }
 
+/* Búsqueda por foto, en la portada */
+
+.buscar-foto {
+    max-width: 640px;
+    margin: -3rem auto 3rem;
+    text-align: center;
+}
+
+.buscar-foto h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.8rem;
+}
+
+.buscar-foto form {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.buscar-foto input,
+.buscar-foto select {
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--texto);
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    padding: 0.35rem 0.5rem;
+    min-width: 0;
+}
+
+.buscar-foto input {
+    flex: 1 1 240px;
+}
+
+.buscar-foto button {
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.4rem 1rem;
+    color: var(--acento-texto);
+    background: var(--acento);
+    border: 1px solid var(--acento);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.buscar-foto p {
+    font-size: 0.8rem;
+    margin: 0.6rem 0 0;
+}
+
 /* Navegación por categorías */
 
 .categorias {

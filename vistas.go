@@ -26,6 +26,8 @@ type datosPagina struct {
 	Resultados *resultadoBusqueda
 	Ficha      *ficha
 
+	Foto *resultadoFoto
+
 	// Raices son las categorías raíz que se ofrecen en la portada.
 	Raices      []enlaceCategoria
 	Marketplace marketplace
@@ -37,6 +39,7 @@ var funcionesPlantilla = template.FuncMap{
 	"opcionesEstado":    func() []opcion { return opcionesEstado },
 	"opcionesCompra":    func() []opcion { return opcionesCompra },
 	"opcionesUbicacion": func() []opcion { return opcionesUbicacion },
+	"marketplacesFoto":  opcionesFoto,
 	"miles":             formatoEntero,
 	"add":               func(a, b int) int { return a + b },
 }
@@ -47,6 +50,7 @@ func cargarPlantilla(pagina string) *template.Template {
 	return template.Must(template.New("base.html").Funcs(funcionesPlantilla).ParseFS(
 		plantillasFS,
 		"templates/base.html",
+		"templates/tarjeta.html",
 		"templates/"+pagina+".html",
 	))
 }
@@ -56,6 +60,7 @@ var plantillas = map[string]*template.Template{
 	"error":      cargarPlantilla("error"),
 	"resultados": cargarPlantilla("resultados"),
 	"ficha":      cargarPlantilla("ficha"),
+	"foto":       cargarPlantilla("foto"),
 }
 
 // renderizar ejecuta la plantilla en un búfer antes de escribir nada. Así un
