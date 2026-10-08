@@ -254,6 +254,12 @@ func (f filtrosBusqueda) EnlaceTodoVendedor() string {
 	return f.enlace(1)
 }
 
+// EnlacePrecioAscendente es la misma búsqueda de la más barata a la más cara.
+func (f filtrosBusqueda) EnlacePrecioAscendente() string {
+	f.Orden = "price"
+	return f.enlace(1)
+}
+
 // EnlaceRelevancia es la misma búsqueda ordenada por relevancia.
 func (f filtrosBusqueda) EnlaceRelevancia() string {
 	f.Orden = ""

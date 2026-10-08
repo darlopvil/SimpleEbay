@@ -155,6 +155,13 @@
     </li>
     {{ end }}
 </ul>
+{{ else if .Descartados }}
+{{/* eBay filtra el precio sin envío; con «Precio + envío ↓» y un máximo,
+     los primeros bloques suelen quedar enteros fuera del rango. */}}
+<section class="aviso aviso-neutro">
+    <h1>Ninguno en esta página</h1>
+    <p>Los {{ .Descartados }} artículos que ha devuelto eBay se salen del rango de precio al sumar el envío, porque eBay filtra el precio sin él.{{ if ne $f.Orden "price" }} Prueba a ordenar por <a href="{{ $f.EnlacePrecioAscendente }}">Precio + envío ↑</a>.{{ end }}</p>
+</section>
 {{ else }}
 <section class="aviso aviso-neutro">
     <h1>Sin resultados</h1>
