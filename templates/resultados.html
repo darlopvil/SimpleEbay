@@ -1,7 +1,15 @@
 {{ define "contenido" }}
 {{ $f := .Filtros }}
 <form class="filtros" action="/s" method="get">
+    {{ if $f.Vendedor }}
+    <input type="hidden" name="vendedor" value="{{ $f.Vendedor }}">
+    <label class="filtro-texto">
+        <span>Buscar entre sus artículos</span>
+        <input type="search" name="q" value="{{ $f.Consulta }}" placeholder="Todos">
+    </label>
+    {{ else }}
     <input type="hidden" name="q" value="{{ $f.Consulta }}">
+    {{ end }}
     <label>
         <span>eBay de</span>
         <select name="mp">
@@ -50,7 +58,13 @@
 </section>
 {{ else }}{{ with .Resultados }}
 <p class="resumen tenue">
+    {{ if $f.Vendedor }}
+    {{ miles .Total }} {{ if $f.Consulta }}resultados de «{{ $f.Consulta }}» entre los artículos{{ else }}artículos{{ end }}
+    de <strong>{{ $f.Vendedor }}</strong> en eBay {{ $f.Marketplace.Nombre }}
+    {{ if $f.Consulta }}· <a href="{{ $f.EnlaceTodoVendedor }}">ver todos sus artículos</a> · <a href="{{ $f.EnlaceSinVendedor }}">buscar en todo eBay</a>{{ end }}
+    {{ else }}
     {{ miles .Total }} resultados en eBay {{ $f.Marketplace.Nombre }}
+    {{ end }}
     {{ if .Descartados }}· {{ .Descartados }} ocultos por salirse del rango de precio con el envío incluido{{ end }}
 </p>
 
@@ -84,7 +98,7 @@
             {{ if .Estado }}<li>{{ .Estado }}</li>{{ end }}
             {{ if .Ofertas }}<li>Acepta ofertas</li>{{ end }}
             {{ if .Pais }}<li>Desde {{ .Pais }}</li>{{ end }}
-            {{ if .Vendedor }}<li>{{ .Vendedor }}{{ if .Valoracion }} ({{ .Valoracion }}){{ end }}</li>{{ end }}
+            {{ if .Vendedor }}<li>{{ if .RutaVendedor }}<a class="enlace-vendedor" href="{{ .RutaVendedor }}" target="_blank" rel="noopener" title="Ver todos sus artículos">{{ .Vendedor }}</a>{{ else }}{{ .Vendedor }}{{ end }}{{ if .Valoracion }} ({{ .Valoracion }}){{ end }}</li>{{ end }}
         </ul>
     </li>
     {{ end }}

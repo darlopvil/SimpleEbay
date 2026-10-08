@@ -102,6 +102,7 @@
 <section class="ficha-bloque">
     <h2>Vendedor</h2>
     <p><strong>{{ .Vendedor }}</strong> · {{ if .Profesional }}Vendedor profesional{{ else }}Particular{{ end }}{{ if .Valoracion }} · {{ .Valoracion }}{{ end }}</p>
+    {{ if .RutaVendedor }}<p><a href="{{ .RutaVendedor }}">Ver todos sus artículos</a></p>{{ end }}
     {{ if .Legal }}
     <details>
         <summary>Información legal del vendedor</summary>

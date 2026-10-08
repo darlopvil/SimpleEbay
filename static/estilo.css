@@ -221,8 +221,13 @@ a:hover {
     flex-basis: 170px;
 }
 
+/* Sin crecer: cuando le toca fila propia, dos importes no necesitan más. */
 .filtros .filtro-precio {
-    flex-basis: 190px;
+    flex: 0 1 220px;
+}
+
+.filtros .filtro-texto {
+    flex-basis: 220px;
 }
 
 .filtros .rango {
@@ -381,6 +386,16 @@ a:hover {
 .tarjeta-datos .gratis {
     color: var(--acento);
     font-weight: 600;
+}
+
+/* Discreto como el resto de datos, pero reconocible como enlace. */
+.enlace-vendedor {
+    color: inherit;
+    text-decoration-style: dotted;
+}
+
+.enlace-vendedor:hover {
+    color: var(--acento);
 }
 
 /* Paginación */

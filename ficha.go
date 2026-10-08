@@ -216,6 +216,7 @@ type ficha struct {
 	Envios         []filaEnvio
 
 	Vendedor     string
+	RutaVendedor string
 	Valoracion   string
 	Profesional  bool
 	Legal        []dato
@@ -536,6 +537,7 @@ func nuevaFicha(it *itemAPI, grupo *grupoAPI) *ficha {
 
 	if v := it.Vendedor; v != nil {
 		f.Vendedor = v.Usuario
+		f.RutaVendedor = enlaceVendedor(v.Usuario)
 		if v.Porcentaje != "" {
 			f.Valoracion = formatoPorcentaje(v.Porcentaje) + " positivas"
 		}

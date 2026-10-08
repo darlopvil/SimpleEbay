@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -33,6 +34,20 @@ const (
 
 	cookieMarketplace = "mp"
 )
+
+// Los nombres de usuario de eBay solo admiten letras, números, punto, guion,
+// guion bajo y asterisco. Validarlos impide además colar una coma o una llave
+// en el filtro de la API, donde separan condiciones.
+var patronVendedor = regexp.MustCompile(`^[A-Za-z0-9._*-]{1,64}$`)
+
+// enlaceVendedor apunta a la lista de artículos de un vendedor. Si el nombre
+// no tiene la forma esperada devuelve "", y la plantilla lo pinta sin enlace.
+func enlaceVendedor(usuario string) string {
+	if !patronVendedor.MatchString(usuario) {
+		return ""
+	}
+	return "/s?vendedor=" + url.QueryEscape(usuario)
+}
 
 type opcion struct {
 	Valor    string
@@ -113,6 +128,7 @@ type filtrosBusqueda struct {
 	Estado      string
 	Compra      string
 	Desde       string
+	Vendedor    string // sin consulta, lista todos sus artículos
 	// Rango de precio en euros, envío incluido.
 	Min    string
 	Max    string
@@ -174,6 +190,9 @@ func leerFiltros(w http.ResponseWriter, r *http.Request) filtrosBusqueda {
 	if utf8.RuneCountInString(f.Consulta) > maxConsulta {
 		f.Consulta = string([]rune(f.Consulta)[:maxConsulta])
 	}
+	if v := strings.TrimSpace(q.Get("vendedor")); patronVendedor.MatchString(v) {
+		f.Vendedor = v
+	}
 	if v := q.Get("orden"); opcionValida(ordenesDisponibles, v) {
 		f.Orden = v
 	}
@@ -196,9 +215,9 @@ func leerFiltros(w http.ResponseWriter, r *http.Request) filtrosBusqueda {
 // el marketplace para que los enlaces no dependan de la cookie.
 func (f filtrosBusqueda) enlace(pagina int) string {
 	v := url.Values{}
-	v.Set("q", f.Consulta)
 	v.Set("mp", f.Marketplace.ID)
 	for clave, valor := range map[string]string{
+		"q": f.Consulta, "vendedor": f.Vendedor,
 		"orden": f.Orden, "estado": f.Estado, "compra": f.Compra,
 		"desde": f.Desde, "min": f.Min, "max": f.Max,
 	} {
@@ -212,6 +231,21 @@ func (f filtrosBusqueda) enlace(pagina int) string {
 	return "/s?" + v.Encode()
 }
 
+// EnlaceSinVendedor es la misma búsqueda en todo eBay, conservando los
+// filtros. Solo tiene sentido con consulta: sin ella no quedaría nada que
+// buscar.
+func (f filtrosBusqueda) EnlaceSinVendedor() string {
+	f.Vendedor = ""
+	return f.enlace(1)
+}
+
+// EnlaceTodoVendedor quita la consulta y deja todos los artículos del
+// vendedor, conservando los filtros.
+func (f filtrosBusqueda) EnlaceTodoVendedor() string {
+	f.Consulta = ""
+	return f.enlace(1)
+}
+
 // bloque devuelve el número de bloque (desde 0) al que pertenece la página.
 func (f filtrosBusqueda) bloque() int {
 	return (f.Pagina - 1) / paginasPorBloque
@@ -223,7 +257,14 @@ func (f filtrosBusqueda) bloque() int {
 func (f filtrosBusqueda) consultaAPI() url.Values {
 	offset := f.bloque() * porBloque
 	v := url.Values{}
-	v.Set("q", f.Consulta)
+	// La API exige q, category_ids u otro criterio de búsqueda. Para listar
+	// todo lo de un vendedor sirve category_ids=0, la raíz del árbol de
+	// categorías; una q vacía la rechaza con el error 12001. Comprobado.
+	if f.Consulta != "" {
+		v.Set("q", f.Consulta)
+	} else {
+		v.Set("category_ids", "0")
+	}
 	v.Set("limit", strconv.Itoa(min(porBloque, maxResultados-offset)))
 	v.Set("offset", strconv.Itoa(offset))
 	if f.Orden != "" {
@@ -231,6 +272,9 @@ func (f filtrosBusqueda) consultaAPI() url.Values {
 	}
 
 	var filtro []string
+	if f.Vendedor != "" {
+		filtro = append(filtro, "sellers:{"+f.Vendedor+"}")
+	}
 	if f.Estado != "" {
 		filtro = append(filtro, "conditions:{"+f.Estado+"}")
 	}
@@ -327,6 +371,7 @@ type tarjeta struct {
 	Estado       string
 	Pais         string
 	Vendedor     string
+	RutaVendedor string
 	Valoracion   string
 }
 
@@ -433,6 +478,7 @@ func nuevaTarjeta(r resumenAPI) tarjeta {
 	}
 	if r.Vendedor != nil {
 		t.Vendedor = r.Vendedor.Usuario
+		t.RutaVendedor = enlaceVendedor(r.Vendedor.Usuario)
 		t.Valoracion = formatoPorcentaje(r.Vendedor.Porcentaje)
 		if r.Vendedor.Puntos > 0 {
 			t.Valoracion += " · " + formatoEntero(r.Vendedor.Puntos)
@@ -545,7 +591,7 @@ func mensajeError(err error) (string, string) {
 func manejadorBusqueda(ebay *clienteEbay) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		f := leerFiltros(w, r)
-		if f.Consulta == "" {
+		if f.Consulta == "" && f.Vendedor == "" {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
@@ -554,9 +600,15 @@ func manejadorBusqueda(ebay *clienteEbay) http.HandlerFunc {
 			Consulta: f.Consulta,
 			Filtros:  &f,
 		}
+		switch {
+		case f.Vendedor != "" && f.Consulta == "":
+			datos.Titulo = "Artículos de " + f.Vendedor
+		case f.Vendedor != "":
+			datos.Titulo = f.Consulta + " · artículos de " + f.Vendedor
+		}
 		res, err := buscar(r.Context(), ebay, f)
 		if err != nil {
-			log.Printf("búsqueda %q en %s: %v", f.Consulta, f.Marketplace.ID, err)
+			log.Printf("búsqueda %q (vendedor %q) en %s: %v", f.Consulta, f.Vendedor, f.Marketplace.ID, err)
 			datos.Error, datos.Detalle = mensajeError(err)
 			renderizar(w, http.StatusBadGateway, "resultados", datos)
 			return
