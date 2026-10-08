@@ -67,6 +67,13 @@
     {{ end }}
     {{ if .Descartados }}· {{ .Descartados }} ocultos por salirse del rango de precio con el envío incluido{{ end }}
 </p>
+{{/* Con cualquier orden que no sea el de relevancia, eBay solo devuelve los
+     anuncios con las palabras buscadas en el título: «playstation» en un
+     vendedor pasa de 254 resultados a 25, y en todo eBay pierde un 23 %.
+     Comprobado con precio, recientes, terminan antes y distancia. */}}
+{{ if and $f.Orden $f.Consulta }}
+<p class="nota-orden tenue">Con este orden, eBay solo cuenta los anuncios que llevan las palabras buscadas en el título. <a href="{{ $f.EnlaceRelevancia }}">Por relevancia</a> salen también los demás.</p>
+{{ end }}
 
 {{ if .Tarjetas }}
 <ul class="rejilla">

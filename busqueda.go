@@ -246,6 +246,12 @@ func (f filtrosBusqueda) EnlaceTodoVendedor() string {
 	return f.enlace(1)
 }
 
+// EnlaceRelevancia es la misma búsqueda ordenada por relevancia.
+func (f filtrosBusqueda) EnlaceRelevancia() string {
+	f.Orden = ""
+	return f.enlace(1)
+}
+
 // bloque devuelve el número de bloque (desde 0) al que pertenece la página.
 func (f filtrosBusqueda) bloque() int {
 	return (f.Pagina - 1) / paginasPorBloque
