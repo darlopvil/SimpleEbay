@@ -156,7 +156,7 @@ type panelAspectos struct {
 func (f filtrosBusqueda) camposOcultos() []campoOculto {
 	var campos []campoOculto
 	for _, c := range []campoOculto{
-		{"q", f.Consulta}, {"vendedor", f.Vendedor}, {"mp", f.Marketplace.ID},
+		{"q", f.Consulta}, {"vendedor", f.Vendedor}, {"epid", f.Epid}, {"mp", f.Marketplace.ID},
 		{"orden", f.Orden}, {"estado", f.Estado}, {"compra", f.Compra},
 		{"desde", f.Desde}, {"min", f.Min}, {"max", f.Max},
 	} {

@@ -3,6 +3,7 @@
 <form class="filtros" action="/s" method="get">
     {{ if $f.Vendedor }}<input type="hidden" name="vendedor" value="{{ $f.Vendedor }}">{{ end }}
     {{ if $f.Categoria }}<input type="hidden" name="categoria" value="{{ $f.Categoria }}">{{ end }}
+    {{ if $f.Epid }}<input type="hidden" name="epid" value="{{ $f.Epid }}">{{ end }}
     {{ range $f.Aspectos }}<input type="hidden" name="asp" value="{{ .Nombre }}:{{ .Valor }}">{{ end }}
     {{ if or $f.Vendedor $f.Categoria }}
     <label class="filtro-texto">
@@ -107,6 +108,8 @@
     {{ miles .Total }} {{ if $f.Consulta }}resultados de «{{ $f.Consulta }}» entre los artículos{{ else }}artículos{{ end }}
     de <strong>{{ $f.Vendedor }}</strong> en eBay {{ $f.Marketplace.Nombre }}
     {{ if $f.Consulta }}· <a href="{{ $f.EnlaceTodoVendedor }}">ver todos sus artículos</a> · <a href="{{ $f.EnlaceSinVendedor }}">buscar en todo eBay</a>{{ end }}
+    {{ else if $f.Epid }}
+    {{ miles .Total }} anuncios del mismo producto del catálogo en eBay {{ $f.Marketplace.Nombre }}
     {{ else }}
     {{ miles .Total }} resultados en eBay {{ $f.Marketplace.Nombre }}
     {{ end }}
@@ -151,6 +154,7 @@
             {{ if .Ofertas }}<li>Acepta ofertas</li>{{ end }}
             {{ if .Pais }}<li>Desde {{ .Pais }}</li>{{ end }}
             {{ if .Vendedor }}<li>{{ if .RutaVendedor }}<a class="enlace-vendedor" href="{{ .RutaVendedor }}" target="_blank" rel="noopener" title="Ver todos sus artículos">{{ .Vendedor }}</a>{{ else }}{{ .Vendedor }}{{ end }}{{ if .Valoracion }} ({{ .Valoracion }}){{ end }}</li>{{ end }}
+            {{ if .RutaProducto }}<li><a class="enlace-vendedor" href="{{ .RutaProducto }}" target="_blank" rel="noopener">Más anuncios de este producto</a></li>{{ end }}
         </ul>
     </li>
     {{ end }}

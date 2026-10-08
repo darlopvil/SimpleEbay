@@ -1,5 +1,7 @@
 package main
 
+import "strings"
+
 // marketplace describe un sitio de eBay en el que la Browse API admite
 // búsquedas, con la moneda en la que eBay da sus precios.
 type marketplace struct {
@@ -65,6 +67,10 @@ var nombresEstado = map[string]string{
 func nombreEstado(texto, id string) string {
 	if nombre, ok := nombresEstado[id]; ok {
 		return nombre
+	}
+	// Sin conditionId, eBay manda este texto en inglés.
+	if strings.EqualFold(texto, "Unspecified") {
+		return "Sin especificar"
 	}
 	return texto
 }

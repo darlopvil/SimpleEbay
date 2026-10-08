@@ -40,6 +40,9 @@ const (
 // en el filtro de la API, donde separan condiciones.
 var patronVendedor = regexp.MustCompile(`^[A-Za-z0-9._*-]{1,64}$`)
 
+// Identificador de producto del catálogo de eBay (ePID), el de /p/{epid}.
+var patronEpid = regexp.MustCompile(`^[1-9][0-9]{0,14}$`)
+
 // enlaceVendedor apunta a la lista de artículos de un vendedor. Si el nombre
 // no tiene la forma esperada devuelve "", y la plantilla lo pinta sin enlace.
 func enlaceVendedor(usuario string) string {
@@ -131,6 +134,7 @@ type filtrosBusqueda struct {
 	Vendedor    string // sin consulta, lista todos sus artículos
 	Categoria   string // ID de categoría de eBay
 	Aspectos    []aspecto
+	Epid        string // producto del catálogo: todos sus anuncios
 	// Rango de precio en euros, envío incluido.
 	Min    string
 	Max    string
@@ -200,6 +204,9 @@ func leerFiltros(w http.ResponseWriter, r *http.Request) filtrosBusqueda {
 		// Los aspectos son de una categoría: sin ella no significan nada.
 		f.Aspectos = leerAspectos(q["asp"])
 	}
+	if v := strings.TrimSpace(q.Get("epid")); patronEpid.MatchString(v) {
+		f.Epid = v
+	}
 	if v := q.Get("orden"); opcionValida(ordenesDisponibles, v) {
 		f.Orden = v
 	}
@@ -224,7 +231,7 @@ func (f filtrosBusqueda) enlace(pagina int) string {
 	v := url.Values{}
 	v.Set("mp", f.Marketplace.ID)
 	for clave, valor := range map[string]string{
-		"q": f.Consulta, "vendedor": f.Vendedor, "categoria": f.Categoria,
+		"q": f.Consulta, "vendedor": f.Vendedor, "categoria": f.Categoria, "epid": f.Epid,
 		"orden": f.Orden, "estado": f.Estado, "compra": f.Compra,
 		"desde": f.Desde, "min": f.Min, "max": f.Max,
 	} {
@@ -283,10 +290,13 @@ func (f filtrosBusqueda) consultaAPI() url.Values {
 	if f.Consulta != "" {
 		v.Set("q", f.Consulta)
 	}
+	if f.Epid != "" {
+		v.Set("epid", f.Epid)
+	}
 	switch {
 	case f.Categoria != "":
 		v.Set("category_ids", f.Categoria)
-	case f.Consulta == "":
+	case f.Consulta == "" && f.Epid == "":
 		v.Set("category_ids", "0")
 	}
 	// Los desgloses por categorías y por características vienen en la misma
@@ -376,6 +386,9 @@ type resumenAPI struct {
 		Pais string `json:"country"`
 	} `json:"itemLocation"`
 	Vendedor *vendedorAPI `json:"seller"`
+	// Solo lo traen los anuncios asociados a un producto del catálogo; la
+	// ficha no lo trae nunca, ni con fieldgroups=PRODUCT.
+	Epid string `json:"epid"`
 }
 
 type respuestaBusquedaAPI struct {
@@ -406,6 +419,7 @@ type tarjeta struct {
 	Vendedor     string
 	RutaVendedor string
 	Valoracion   string
+	RutaProducto string
 }
 
 func contiene(lista []string, valor string) bool {
@@ -508,6 +522,9 @@ func nuevaTarjeta(r resumenAPI) tarjeta {
 
 	if r.Ubicacion != nil {
 		t.Pais = nombrePais(r.Ubicacion.Pais)
+	}
+	if patronEpid.MatchString(r.Epid) {
+		t.RutaProducto = "/s?epid=" + r.Epid
 	}
 	if r.Vendedor != nil {
 		t.Vendedor = r.Vendedor.Usuario
@@ -612,7 +629,12 @@ func buscar(ctx context.Context, ebay *clienteEbay, f filtrosBusqueda) (*resulta
 	inicio := ((f.Pagina - 1) % paginasPorBloque) * porPagina
 	if inicio < len(validos) {
 		for _, r := range validos[inicio:min(inicio+porPagina, len(validos))] {
-			res.Tarjetas = append(res.Tarjetas, nuevaTarjeta(r))
+			t := nuevaTarjeta(r)
+			if f.Epid != "" {
+				// Ya se están viendo los anuncios de ese producto.
+				t.RutaProducto = ""
+			}
+			res.Tarjetas = append(res.Tarjetas, t)
 		}
 	}
 	res.Paginas, res.Anterior, res.Siguiente = paginacion(f, resp.Total)
@@ -642,7 +664,7 @@ func mensajeError(err error) (string, string) {
 func manejadorBusqueda(ebay *clienteEbay) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		f := leerFiltros(w, r)
-		if f.Consulta == "" && f.Vendedor == "" && f.Categoria == "" {
+		if f.Consulta == "" && f.Vendedor == "" && f.Categoria == "" && f.Epid == "" {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
@@ -656,6 +678,8 @@ func manejadorBusqueda(ebay *clienteEbay) http.HandlerFunc {
 			datos.Titulo = "Artículos de " + f.Vendedor
 		case f.Vendedor != "":
 			datos.Titulo = f.Consulta + " · artículos de " + f.Vendedor
+		case f.Epid != "" && f.Consulta == "":
+			datos.Titulo = "Anuncios del mismo producto"
 		}
 		res, err := buscar(r.Context(), ebay, f)
 		if err != nil {

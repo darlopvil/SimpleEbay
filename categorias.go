@@ -235,7 +235,7 @@ func (f filtrosBusqueda) conCategoria(id string) string {
 	f.Categoria = id
 	// Cada categoría tiene sus propias características.
 	f.Aspectos = nil
-	if f.Categoria == "" && f.Consulta == "" && f.Vendedor == "" {
+	if f.Categoria == "" && f.Consulta == "" && f.Vendedor == "" && f.Epid == "" {
 		return "/"
 	}
 	return f.enlace(1)
