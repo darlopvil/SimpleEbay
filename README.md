@@ -135,9 +135,12 @@ SimpleEbay automatically. Use regular expressions, apply them to the main
 window only, and keep this order, since the first matching rule wins.
 Replace `https://simpleebay.example.com` with your instance.
 
-The first rule is for share links and is complete as shown. Every other
-pattern starts with the same domain prefix:
-`^https?://(?:[a-z]+.)?ebay.(?:co.uk|com.(?:au|hk|sg|my)|[a-z]{2,3})`
+Rules 1 and 13 are complete as shown. Every other pattern starts with the
+same domain prefix:
+
+```
+^https?://(?:[a-z]+\.)?ebay\.(?:co\.uk|com\.(?:au|hk|sg|my)|[a-z]{2,3})
+```
 
 | # | Pattern (after the prefix) | Redirect to |
 | --- | --- | --- |
@@ -153,11 +156,13 @@ pattern starts with the same domain prefix:
 | 10 | `/b/[^/?#]+/([1-9]\d*)(?:[/?#].*)?$` | `https://simpleebay.example.com/s?categoria=$1` |
 | 11 | `/sch/[^?#]*\?(?:[^#]*&)?_sacat=([1-9]\d*).*$` | `https://simpleebay.example.com/s?categoria=$1` |
 | 12 | `(?:[/?#].*)?$` | `https://simpleebay.example.com/` |
+| 13 | `^https?://i\.ebayimg\.com/(.*)$` (no prefix) | `https://simpleebay.example.com/img/$1` |
 
 They cover share links, listings (with and without a variation), old
 `ViewItem` URLs, affiliate links, catalogue product pages, seller profiles and
-"seller's other items", searches and category pages. The last one sends
-anything else on eBay to the home page, so the browser never lands on eBay.
+"seller's other items", searches and category pages. Rule 12 sends
+anything else on eBay to the home page, so the browser never lands on eBay,
+and rule 13 opens eBay photos through the image proxy.
 Categories open in the marketplace selected in SimpleEbay, not the one in the
 link.
 
